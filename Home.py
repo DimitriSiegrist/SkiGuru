@@ -1,28 +1,38 @@
 import streamlit as st
 
-st.set_page_config(page_title="SkiGuru", page_icon="🏔️", layout="wide")
+from src.style import seite_aufsetzen
 
-st.title("🏔️ SkiGuru")
-st.caption("Vier Werkzeuge für den nächsten Skitag")
-
-st.divider()
+seite_aufsetzen("SkiGuru")
 
 st.markdown(
-    """
-    Wir bauen eine App mit vier Funktionen, die wir uns auf anderen
-    Skiseiten gewünscht hätten. Zwei fürs Tourengehen, zwei für die Piste.
-
-    **Snow History** zeigt Neuschnee und Schneehöhe der letzten Wochen.
-
-    **Snow Melt** schätzt, wie lange der Schnee noch liegt.
-
-    **Price Explorer** findet die günstigen Tage an einem Skigebiet.
-
-    **Resort Finder** rangiert Skigebiete nach deinen eigenen Gewichten.
-
-    Links in der Navigation geht es los.
-    """
+    "<p class='eyebrow'>Data Analysis with Python · HS26 · "
+    "Dimitri Siegrist & Luisa Schnabel</p>",
+    unsafe_allow_html=True,
 )
+st.title("SkiGuru")
+st.caption("Four tools for your next day on snow")
 
 st.divider()
-st.caption("Projekt von Dimitri Siegrist und Luisa Schnabel · Data Analysis with Python, HS26")
+
+FEATURES = [
+    ("pages/1_Snow_History.py", "❄", "Snow History",
+     "New snow and snow depth over the last few weeks to assess avalanche risk."),
+    ("pages/2_Snow_Melt.py", "☼", "Snow Melt",
+     "How long the existing snow will last if none falls. Very useful in spring."),
+    ("pages/3_Price_Explorer.py", "$", "Price Explorer",
+     "We find the cheapest days at the resort for you."),
+    ("pages/4_Resort_Finder.py", "❤", "Resort Finder",
+     "You set your own weights on price, travel time from your starting point, "
+     "snow conditions, piste kilometres and piste mix, and it ranks resorts by "
+     "exactly those, instead of by a comparison site's criteria."),
+]
+
+spalten = st.columns(4, gap="medium")
+
+for spalte, (pfad, symbol, titel, text) in zip(spalten, FEATURES):
+    with spalte:
+        with st.container(border=True):
+            st.markdown(f"<div class='kartensymbol'>{symbol}</div>", unsafe_allow_html=True)
+            st.subheader(titel)
+            st.write(text)
+            st.page_link(pfad, label="Open →")

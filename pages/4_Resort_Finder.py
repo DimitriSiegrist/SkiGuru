@@ -1,6 +1,6 @@
 import streamlit as st
 
 st.title("Resort Finder")
-st.caption("Welches Skigebiet passt zu deinen Prioritäten?")
+st.caption("Which resort fits your priorities?")
 
-st.info("Hier kommt das Ranking.")
+st.info("Ranking goes here.")

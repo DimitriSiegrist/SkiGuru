@@ -1,6 +1,6 @@
 import streamlit as st
 
 st.title("Snow History")
-st.caption("Neuschnee und Schneehöhe der letzten Wochen")
+st.caption("New snow and snow depth over the last few weeks")
 
-st.info("Hier kommt der Chart. Datenquelle: SLF, IMIS-Stationen.")
+st.info("Chart goes here. Data source: SLF, IMIS stations.")
