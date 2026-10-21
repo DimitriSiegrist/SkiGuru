@@ -1,0 +1,6 @@
+streamlit
+pandas
+pyarrow
+requests
+matplotlib
+scikit-learn
