@@ -4,7 +4,7 @@ from pathlib import Path
 
 import streamlit as st
 
-ICON = Path(__file__).resolve().parent.parent / "assets" / "skiguru_icon_192.png"
+ICON = Path(__file__).resolve().parent.parent / "assets" / "icon.png"
 
 STIL = """
 <style>
@@ -59,3 +59,6 @@ def seite_aufsetzen(titel):
         page_title=titel,
         page_icon=str(ICON),
         layout="wide",
+        initial_sidebar_state="collapsed",
+    )
+    st.markdown(STIL, unsafe_allow_html=True)
