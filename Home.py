@@ -1,6 +1,6 @@
 import streamlit as st
 
-from src.style import seite_aufsetzen
+from src.style import ASSETS, seite_aufsetzen
 
 seite_aufsetzen("SkiGuru")
 
@@ -12,26 +12,42 @@ st.markdown(
 st.title("SkiGuru")
 st.caption("Three tools for your next day on snow")
 
-st.divider()
+st.write("")
 
-FEATURES = [
-    ("pages/1_Snow_History.py", "❄", "Snow History",
-     "New snow, snow depth and temperature over the last few weeks, "
-     "to assess avalanche risk and whether a tour is feasible at all."),
-    ("pages/2_Snow_Melt.py", "☼", "Snow Melt",
-     "How long the existing snow will last if none falls. Very useful in spring."),
-    ("pages/3_Resort_Finder.py", "❤", "Resort Finder",
-     "You set your own weights on price, travel time from your starting point, "
-     "snow conditions, piste kilometres and piste mix, and it ranks resorts by "
-     "exactly those, instead of by a comparison site's criteria."),
-]
+links, rechts = st.columns([2, 1], gap="medium")
 
-spalten = st.columns(3, gap="medium")
+with links:
+    st.image(str(ASSETS / "ski_touring.png"), width=96)
+    with st.container(border=True, height=270, key="gruppe_tour"):
+        st.markdown("### Ski touring")
+        st.caption("Is the tour on, and how long will the snow hold?")
 
-for spalte, (pfad, symbol, titel, text) in zip(spalten, FEATURES):
-    with spalte:
-        with st.container(border=True):
-            st.markdown(f"<div class='kartensymbol'>{symbol}</div>", unsafe_allow_html=True)
-            st.subheader(titel)
-            st.write(text)
-            st.page_link(pfad, label="Open →")
+        a, b = st.columns(2, gap="medium")
+        with a:
+            st.markdown("**Snow History**")
+            st.write(
+                "New snow and snow depth over the past weeks, to judge avalanche "
+                "risk and whether a tour is feasible at all."
+            )
+            st.page_link("pages/1_Snow_History.py", label="Open →")
+        with b:
+            st.markdown("**Snow Melt**")
+            st.write(
+                "How long the snow already lying will last if none falls. "
+                "Most useful in spring."
+            )
+            st.page_link("pages/2_Snow_Melt.py", label="Open →")
+
+with rechts:
+    st.image(str(ASSETS / "ski_downhill.png"), width=96)
+    with st.container(border=True, height=270, key="gruppe_piste"):
+        st.markdown("### On piste")
+        st.caption("Which resort fits your day?")
+
+        st.markdown("**Resort Finder**")
+        st.write(
+            "Set your own weights on price, travel time from your starting point, "
+            "snow conditions, piste kilometres and piste mix, and it ranks resorts "
+            "by exactly those."
+        )
+        st.page_link("pages/3_Resort_Finder.py", label="Open →")

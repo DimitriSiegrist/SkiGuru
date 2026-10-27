@@ -1,10 +1,11 @@
-"""Gemeinsames Aussehen fuer alle Seiten von SkiGuru."""
+"""Shared look for all SkiGuru pages."""
 
 from pathlib import Path
 
 import streamlit as st
 
-ICON = Path(__file__).resolve().parent.parent / "assets" / "icon.png"
+ASSETS = Path(__file__).resolve().parent.parent / "assets"
+ICON = ASSETS / "icon.png"
 
 STIL = """
 <style>
@@ -20,15 +21,9 @@ h1 { font-size: 3.4rem !important; line-height: 1.05 !important; }
 
 #MainMenu, footer { visibility: hidden; }
 
-div[data-testid="stVerticalBlockBorderWrapper"] {
-    border: 1px solid #e3e3e3 !important;
+.st-key-gruppe_tour, .st-key-gruppe_piste {
+    border: 1px solid #111111 !important;
     border-radius: 0 !important;
-    padding: 1.7rem 1.4rem 1.3rem !important;
-    min-height: 250px;
-    transition: border-color .18s ease;
-}
-div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-    border-color: #111111 !important;
 }
 
 a, a:visited, a:hover { color: #111111 !important; }
@@ -42,19 +37,12 @@ hr { border-color: #ececec !important; }
     color: #8c8c8c;
     margin: 0 0 .4rem 0;
 }
-
-.kartensymbol {
-    font-size: 1.5rem;
-    line-height: 1;
-    color: #111111;
-    margin-bottom: .7rem;
-}
 </style>
 """
 
 
 def seite_aufsetzen(titel):
-    """Setzt Seitentitel, Icon und Stil. Muss als Erstes aufgerufen werden."""
+    """Sets page title, icon and style. Must be called first."""
     st.set_page_config(
         page_title=titel,
         page_icon=str(ICON),
