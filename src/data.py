@@ -1,4 +1,4 @@
-"""Schneedaten laden: Grundstock aus Parquet plus die letzten Tage aus der SLF-API."""
+"""Loading the snow data: Parquet base plus the last few days from the SLF API."""
 
 from pathlib import Path
 
@@ -8,13 +8,15 @@ import streamlit as st
 
 BASIS = Path(__file__).resolve().parent.parent
 PARQUET = BASIS / "data_clean" / "daily_snow.parquet"
+TEMPERATUR = BASIS / "data_clean" / "daily_temp.parquet"
 STATIONEN = BASIS / "data_clean" / "stationen.csv"
 API = "https://measurement-api.slf.ch/public/api/imis/daily-snow"
+BULLETIN = "https://aws.slf.ch/api/bulletin/caaml/en/geojson"
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def _hole_api(tage=7):
-    """Holt die letzten Tage von der SLF-API. Erlaubt sind nur 1, 3 oder 7."""
+    """Fetches the last few days from the SLF API. Only 1, 3 or 7 are allowed."""
     antwort = requests.get(API, params={"period_in_days": tage}, timeout=20)
     antwort.raise_for_status()
 
@@ -28,9 +30,9 @@ def _hole_api(tage=7):
     return neu[["station_code", "datum", "hyear", "HS", "HN_1D"]]
 
 
-@st.cache_data(ttl=1800, show_spinner="Lade Schneedaten ...")
+@st.cache_data(ttl=1800, show_spinner="Loading snow data ...")
 def lade_schnee():
-    """Gibt (daten, live) zurueck. live ist False, wenn die API nicht erreichbar war."""
+    """Returns (data, live). live is False if the API could not be reached."""
     daten = pd.read_parquet(PARQUET)
     daten["station_code"] = daten["station_code"].astype(str)
 
@@ -52,8 +54,30 @@ def lade_schnee():
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
+def lade_temperatur():
+    """Daily air and snow surface temperatures per station."""
+    temp = pd.read_parquet(TEMPERATUR)
+    temp["station_code"] = temp["station_code"].astype(str)
+    return temp
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def lade_bulletin():
+    """Current SLF avalanche bulletin as GeoJSON. None if unavailable."""
+    try:
+        antwort = requests.get(BULLETIN, timeout=15)
+        antwort.raise_for_status()
+        inhalt = antwort.json()
+        if inhalt.get("features"):
+            return inhalt
+    except Exception:
+        pass
+    return None
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
 def lade_stationen(tage_aktiv=7):
-    """Schneestationen mit Koordinaten und aktuellem Schneestand."""
+    """Snow stations with coordinates and current snow depth."""
     daten, _ = lade_schnee()
 
     stationen = pd.read_csv(STATIONEN)

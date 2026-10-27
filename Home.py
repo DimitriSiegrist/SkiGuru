@@ -46,8 +46,6 @@ with rechts:
 
         st.markdown("**Resort Finder**")
         st.write(
-            "Set your own weights on price, travel time from your starting point, "
-            "snow conditions, piste kilometres and piste mix, and it ranks resorts "
-            "by exactly those."
+            "Set your weights on price, travel time, piste kilometres and mix, and it ranks resorts by exactly those."
         )
         st.page_link("pages/3_Resort_Finder.py", label="Open →")
