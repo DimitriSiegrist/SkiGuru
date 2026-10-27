@@ -86,8 +86,17 @@ alle = schnee[schnee["station_code"] == gewaehlt].sort_values("datum")
 saison = int(alle["hyear"].max())
 
 if tage is None:
-    reihe = alle[alle["hyear"] == saison]
-    zeitraum_text = f"Season {saison - 1}/{str(saison)[-2:]}, since 1 October"
+    st.caption(
+        "Weak layers that form early in the winter can still release avalanches months "
+        "later, so the whole season matters, not only the past few weeks."
+    )
+    saison_start = pd.Timestamp(year=saison - 1, month=10, day=1)
+    saison_ende = pd.Timestamp(year=saison, month=6, day=30)
+    reihe = alle[(alle["datum"] >= saison_start) & (alle["datum"] <= saison_ende)]
+    zeitraum_text = (
+        f"Season {saison - 1}/{str(saison)[-2:]}, 1 October to 30 June, "
+        "the ski touring season"
+    )
 else:
     reihe = alle[alle["datum"] > stand - pd.Timedelta(days=tage)]
     zeitraum_text = f"{tage} days up to {stand:%d %B %Y}"
@@ -104,7 +113,7 @@ neu_zeitraum = reihe["HN_1D"].sum()
 if station["HS"] == 0:
     satz = (
         f"**{station['name']}** sits at {meter(station['hoehe'])} m. "
-        f"No snow at the station right now."
+        "No snow at the station right now."
     )
 elif neu_7 > 0:
     satz = (
@@ -133,10 +142,21 @@ st.line_chart(linie.set_index("Date")["Snow depth (cm)"], height=260)
 
 # --- New snow ---
 st.markdown("##### New snow per day")
-st.caption(
-    "Snow that fell in the preceding 24 hours, in cm. "
-    "Modelled by the SNOWPACK model from the station's measurements, not measured directly."
-)
+st.caption(f"Fresh snowfall in cm. {zeitraum_text}.")
+
+with st.expander("How is new snow per day calculated?"):
+    st.markdown(
+        "The station only measures one thing: the total depth of the snowpack. "
+        "New snow is not simply the change in that number, because the pack settles "
+        "and melts while fresh snow lands on top of it. Twenty centimetres of new snow "
+        "can lift the measured depth by only fifteen, and on a warm spring day the depth "
+        "can even fall while it is snowing.\n\n"
+        "SLF's **SNOWPACK** model resolves this. It simulates the snowpack layer by layer "
+        "from the station's own measurements of air temperature, humidity, wind and "
+        "radiation, calculates how far each layer sank or melted, and attributes whatever "
+        "is left over to fresh snowfall.\n\n"
+        "The figure shown here is therefore modelled rather than measured."
+    )
 
 balken = reihe.rename(columns={"datum": "Date", "HN_1D": "New snow (cm)"})
 st.bar_chart(balken.set_index("Date")["New snow (cm)"], height=200)
