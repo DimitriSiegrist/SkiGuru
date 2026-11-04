@@ -1,6 +1,6 @@
 streamlit
 pandas
-pyarrow
+pyarrow>=26
 requests
 matplotlib
 scikit-learn
