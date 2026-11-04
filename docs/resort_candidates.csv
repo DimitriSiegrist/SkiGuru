@@ -1,0 +1,46 @@
+resort,region,website,ticket_url,price_location,dynamic_pricing,dec_mar_bookable,scraping_allowed,page_type,notes
+Zermatt/Matterhorn Ski Paradise,Valais,https://www.matterhornparadise.ch/en,https://www.matterhornparadise.ch/en/book/tickets/ski-pass-winter,,,,,,
+Verbier/4 Vallées,Valais,https://verbier4vallees.ch/en,https://verbier4vallees.ch/en/online-shop/tickets/ski-passes_ticket_159334,,,,,,
+St. Moritz - Corviglia/celerina,Graubünden,https://www.mountains.ch/en,https://www.mountains.ch/en/webshop,,,,,,check: Corviglia day pass in webshop?
+Flims Laax Falera,Graubünden,https://laax.com/en,https://laax.com/en/tickets,,,,,,
+"Jungfrau Ski Region - Grindelwald, Wengen & Mürren",Bern,https://www.jungfrau.ch/en-gb/jungfrau-ski-region/,https://top-of-travel.jungfrau.ch/en/booking/ski/start,,,,,,
+Arosa Lenzerheide,Graubünden,https://arosalenzerheide.swiss/en,https://shop.arosalenzerheide.swiss/en/1-day-ski-ticket_ticket_127,,,,,,
+Saas-Fee,Valais,https://www.saas-fee.ch/en/,https://www.saas-fee.ch/en/ski-passes-1/skipasses,,,,,,
+Davos Klosters,Graubünden,https://www.davosklostersmountains.ch/en,https://www.davosklostersmountains.ch/en/mountains/webshop/ticket-purchase,,,,,,
+Andermatt-Sedrun-Disentis,Uri/Graubünden,https://www.andermatt-sedrun-disentis.ch/en,https://www.andermatt-sedrun-disentis.ch/en/stories/buy-skipass,,,,,,direct shop URL not found
+Crans-Montana,Valais,https://www.mycma.ch/en-US,https://www.mycma.ch/en-US/winter-prices/,,,,,,shop: mycma.ltibooking.com
+Adelboden-Lenk,Bern,https://www.adelboden-lenk.ch/en,https://www.adelboden-lenk.ch/en/Shop/Ticketoverview/1-day-adelboden-lenk_ticket_51393,,,,,,
+Aletsch Arena,Valais,https://www.aletscharena.ch/en,https://shop.aletscharena.ch/en/products/skipass,,,,,,
+Engelberg-Titlis,Obwalden,https://www.titlis.ch/en,https://shop.titlis.ch/en/products/skitickets,,,,,,
+Gstaad,Bern,https://bergbahnen-gstaad.ch/en/winter,https://gstaad.ticketcorner.ch/en/gstaad/mountain-resort-123/ticket,,,,,,check: new shop may be store.gstaad.ch
+Grimentz-Zinal,Valais,https://www.grimentz-zinal.ch,https://grimentzinal.rma.ch/en/,,,,,,homepage not verified
+Champéry/Portes du Soleil,Valais,https://skipass-pds-ch.ch/en,https://skipass-pds-ch.ch/en,,,,,,check: day pass page; prices shop.skipass-pds-ch.ch/en/tarifs
+Meiringen-Hasliberg,Bern,https://www.meiringen-hasliberg.ch/,https://shop.e-guma.ch/bergbahnen-meiringen-hasliberg/de/tickets,,,,,,
+Scuol Motta Naluns,Graubünden,https://www.bergbahnen-scuol.ch/,https://shop.bergbahnen-scuol.ch/en/products/tag/skipass/,,,,,,
+Samnaun/Silvretta Arena,Graubünden,https://bergbahnen-samnaun.ch/,https://tickets.bergbahnen-samnaun.ch/,,,,,,check: shop did not load; alt tickets.ischgl.com
+Villars-Gryon-Les Diablerets,Vaud,https://www.tvgd.ch/en-US/,https://www.tvgd.ch/en-US/tickets/,,,,,,
+Flumserberg,St. Gallen,https://www.flumserberg.ch/,https://www.flumserberg.ch/webshop-english,,,,,,
+Hoch-Ybrig,Schwyz,https://www.hoch-ybrig.ch/,https://www.hoch-ybrig.ch/en/winter/rates/get-your-ticket-online/,,,,,,ticket link not opened
+Stoos,Schwyz,https://www.stoos.ch/en/,https://www.stoos.ch/en/pages/online-shop,,,,,,check: ski day tickets in shop?
+Sörenberg,Lucerne,https://www.soerenberg.ch/,https://shop.soerenberg.ch/en/winter,,,,,,
+Pizol,St. Gallen,https://pizol.com/,https://tickets.pizol.com/de/Winter/store,,,,,,
+Toggenburg (Wildhaus/Alt St. Johann),St. Gallen,https://www.chaeserrugg.ch/,https://shop.chaeserrugg.ch/en/skifahren,,,,,,Wildhaus separate operator: wildhaus.ch / wildhaus.ticketcorner.ch
+Elm,Glarus,https://sportbahnenelm.ch/,https://shop.e-guma.ch/sportbahnenelm/de/tickets,,,,,,
+Klewenalp-Stockhütte,Nidwalden,https://www.klewenalp.ch/,https://shop.klewenalp.ch/en/home,,,,,,
+Melchsee-Frutt,Obwalden,https://frutt.ch/,https://frutt.ticketcorner.ch,,,,,,
+Brunni-Engelberg,Obwalden,https://brunni.ch/,https://brunni.axess.shop/en/Products/Tickets/,,,,,,check: ski day passes in shop?
+Atzmännig,St. Gallen,https://www.atzmaennig.ch,,,,,,,no ticket shop/price page found
+Bannalp,Nidwalden,https://www.bannalp.ch,https://www.bannalp.ch/skilifttarife,,,,,,price page only
+Rigi,Lucerne/Schwyz,https://www.rigi.ch,https://shop.rigi.ch/en/pages/tickets,,,,,,no separate ski pass; rail ticket covers lifts
+Amden,St. Gallen,https://www.amden-weesen.ch,https://www.amden-weesen.ch/en/winter/tariff-sportbahnen-amden,,,,,,price page only; no online shop
+Obersaxen Mundaun,Graubünden,https://www.obersaxen-mundaun.ch,,,,,,,ticket page not found
+Brigels-Waltensburg-Andiast,Graubünden,https://www.brigels-bergbahnen.ch,https://shop.surselva.info/en/ticket/79,,,,,,shop by Surselva Tourismus
+Marbachegg,Lucerne,https://www.marbachegg.ch,,,,,,,no online shop found
+Splügen-Tambo,Graubünden,https://www.spluegen.ch,,,,,,,online shop not found
+Corvatsch,Graubünden,https://www.corvatsch-diavolezza.ch,https://shop.corvatsch-diavolezza.ch/en,,,,,,shared site/shop with Diavolezza
+Diavolezza-Lagalb,Graubünden,https://www.corvatsch-diavolezza.ch,https://shop.corvatsch-diavolezza.ch/en,,,,,,shared site/shop with Corvatsch
+Nendaz/Veysonnaz,Valais,http://www.nvrm.ch,,,,,,,ticket shop not found; maybe covered by Verbier/4 Vallées
+Leukerbad,Valais,https://www.leukerbad.ch,,,,,,,operator Torrent-Bahnen; price page not found
+Belalp,Valais,https://www.belalp.ch,https://shop.belalp.ch/en/products/skitickets-belalp,,,,,,
+Lauchernalp/Lötschental,Valais,https://www.lauchernalp.ch,https://shop.lauchernalp.ch/en,,,,,,
+Savognin,Graubünden,https://www.valsurses.ch,https://www.valsurses.ch/en/bergbahnen/savognin-bergbahnen/winter/tarife,,,,,,price page only; not verified
