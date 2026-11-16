@@ -1,8 +1,8 @@
 import streamlit as st
 
-from src.style import ASSETS, seite_aufsetzen
+from src.style import ASSETS, setup_page
 
-seite_aufsetzen("SkiGuru")
+setup_page("SkiGuru")
 
 st.markdown(
     "<p class='eyebrow'>Data Analysis with Python · HS26 · "

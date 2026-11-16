@@ -3,9 +3,9 @@ import pydeck as pdk
 import streamlit as st
 
 from src.data import lade_bulletin, lade_schnee, lade_stationen, lade_temperatur
-from src.style import seite_aufsetzen
+from src.style import setup_page
 
-seite_aufsetzen("Snow History")
+setup_page("Snow History")
 
 schnee, live = lade_schnee()
 stationen = lade_stationen().copy()
