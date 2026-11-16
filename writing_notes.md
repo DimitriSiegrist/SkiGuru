@@ -19,3 +19,11 @@
 - Dynamic pricing: prices change between scrape days (e.g. 1 Dec: CHF 53 on 13 Nov, CHF 54 on 16 Nov) → store `scraped_on` and `days_ahead`; repeated scrapes are appended, not overwritten
 - Day passes filtered by ticket label, not by day count: on 28 Mar 2027 (summer-time switch) a 2-day ticket (CHF 120.5) otherwise passed the filter
 - Politeness: non-commercial university project (professor confirmed scraping/APIs are fine), 2 s pause between requests, User-Agent names the project
+
+## Train (task 8.3, 16 Nov 2026)
+- Travel time: transport.opendata.ch `/v1/connections` (free, no key); fastest of the next 4 connections; reference day Thu 10 Dec 2026, out from 07:00, back from 16:30 (timetable assumed the same on all weekdays)
+- Zurich HB → Engelberg: 103 min out, 109 min back, 1 change (Lucerne); + 10 min walk each way station → Titlis valley station → T = 232 min round trip
+- Fares: no public SBB price API (OJP Fare on opentransportdata.swiss is beta, XML, needs a key) → looked up once on sbb.ch (16 Nov 2026): return 2nd class, normal fare (no Supersaver): CHF 80 full, CHF 40 Halbtax, GA = CHF 0
+- Checked full fare in a private window (logged-in profile pre-fills the Halbtax)
+- Zurich city upgrade (CHF 5.90) left out: start point is Zurich HB itself
+- K depends on the user's travel pass → stored as both fares in `data_clean/travel_train.csv`, chosen in the app
