@@ -27,3 +27,11 @@
 - Checked full fare in a private window (logged-in profile pre-fills the Halbtax)
 - Zurich city upgrade (CHF 5.90) left out: start point is Zurich HB itself
 - K depends on the user's travel pass → stored as both fares in `data_clean/travel_train.csv`, chosen in the app
+
+## Car (task 8.4, 16 Nov 2026)
+- Distance and driving time: OpenRouteService Directions V2 (`api.heigit.org/openrouteservice/v2/directions/driving-car`; old URL api.openrouteservice.org shut off 28 Sep 2026), free key stored in `.env` (git-ignored), never in code or chats
+- Zurich HB (8.5403, 47.3779) → Titlis valley station: 85.5 km / 76 min out, 86.4 km / 79 min back → 171.9 km, 155 min round trip; no walk (car park at the valley station); no traffic or snow-chain delays
+- Cost per km: variable costs only (fuel, tyres, maintenance) = marginal cost of one extra trip for someone who already owns a car: TCS sample car 2026 CHF 4,135 variable costs / 15,000 km ≈ CHF 0.28/km (full cost incl. fixed costs would be CHF 0.74/km)
+- Parking: CHF 10/day at Parking Talstation Engelberg-Titlis (parking.ch, winter tariff Nov–Apr); parking.ch lists summer tariff (CHF 5) from 1 Mar, overlapping with winter until 30 Apr → assumed CHF 10 for the whole season
+- K_car = 0.2757 × 171.9 + 10 = CHF 57.39 (one person; costs not split among passengers)
+- Example with v = CHF 20/h: car K + v·T = 109, train Halbtax 117, train full fare 157
