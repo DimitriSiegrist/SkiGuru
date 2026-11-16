@@ -35,3 +35,13 @@
 - Parking: CHF 10/day at Parking Talstation Engelberg-Titlis (parking.ch, winter tariff Nov–Apr); parking.ch lists summer tariff (CHF 5) from 1 Mar, overlapping with winter until 30 Apr → assumed CHF 10 for the whole season
 - K_car = 0.2757 × 171.9 + 10 = CHF 57.39 (one person; costs not split among passengers)
 - Example with v = CHF 20/h: car K + v·T = 109, train Halbtax 117, train full fare 157
+
+## Snow (task 8.5, 16 Nov 2026)
+- Station: nearest active snow station to the valley station → TIT2 Titlisboden (2149 m, 3.5 km, measuring since 1993); next one GAD2 Gschletteregg (8 km)
+- Snow data: Dimi's `daily_snow.parquet` (IMIS, measured values only, up to today) → no values for future ski days
+- **Fallback until Dimi's snow forecast exists**: historical values per calendar day at the station
+  - snow depth = median HS over all winters (33 winters at TIT2)
+  - new snow = mean new snow over 3 days, smoothed over ±7 days; new snow only measured since Sep 2011 (complete since then); values > 100 cm/day treated as measurement errors (max 234 cm)
+  - IMIS derives new snow automatically → wind drift can push values up
+- Scaling with caps: x_snow_depth = min(HS / 150 cm, 1), x_new_snow = min(HN3 / 30 cm, 1) → above ~1.5 m base, more snow adds little for piste skiers (gives up linearity at the top)
+- Snow depth and new snow are two separate attributes with their own weights in B
