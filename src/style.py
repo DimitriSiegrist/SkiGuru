@@ -41,7 +41,7 @@ hr { border-color: #ececec !important; }
 """
 
 
-def seite_aufsetzen(titel):
+def setup_page(titel):
     """Sets page title, icon and style. Must be called first."""
     st.set_page_config(
         page_title=titel,
