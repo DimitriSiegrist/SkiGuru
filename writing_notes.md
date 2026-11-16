@@ -45,3 +45,12 @@
   - IMIS derives new snow automatically → wind drift can push values up
 - Scaling with caps: x_snow_depth = min(HS / 150 cm, 1), x_new_snow = min(HN3 / 30 cm, 1) → above ~1.5 m base, more snow adds little for piste skiers (gives up linearity at the top)
 - Snow depth and new snow are two separate attributes with their own weights in B
+
+## Consumer surplus (task 8.6, 16 Nov 2026)
+- B = B₀ + Σ w_k · x̃_k; B₀ = what a ski day as such is worth to the user (user input, default CHF 150) → CS > 0 means the trip is worth it; B₀ does not change the ranking (same for all resorts)
+  - without B₀ (B ≈ day-pass price as in the first spec) CS would be negative for almost every trip, because travel cost and time come on top
+- Pilot: fixed reference ranges instead of min-max (min-max needs at least two resorts): piste km 0–300, lifts 0–80, vertical drop 0–2200 m, top altitude 1500–3500 m, snowmaking 0–1, snow depth 0–150 cm, new snow 0–30 cm, family/freeride/parks 0/1
+- Default weights (CHF, best vs. worst): piste km 30, lifts 5, vertical drop 15, top altitude 10, snowmaking 5, snow depth 25, new snow 10, family/freeride/parks 5 each; difficulty mix to be added later
+- Check: hand calculation = code (15 Jan, train Halbtax, v = 20: B 220.91 − P 58 − K 40 − v·T 77.33 = CS 45.58)
+- Season result (train, Halbtax): CS CHF 26–56; lowest around Christmas/New Year (prices CHF 68–69, little snow), weekends visible as dips (CS mirrors the price)
+- Limitation: late April has the highest CS (cheapest price, full snow score) → spring snow quality and lift closures not modelled
