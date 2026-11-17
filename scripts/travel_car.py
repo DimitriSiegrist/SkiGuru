@@ -13,7 +13,7 @@ import pandas as pd
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
-RESORTS = ROOT / "docs" / "resort_attributes.csv"
+RESORTS = ROOT / "data_clean" / "resorts.csv"
 PARKING = ROOT / "docs" / "car_parking.csv"
 OUT = ROOT / "data_clean" / "travel_car.csv"
 

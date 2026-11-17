@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-RESORTS = ROOT / "docs" / "resort_attributes.csv"
+RESORTS = ROOT / "data_clean" / "resorts.csv"
 STATIONS = ROOT / "data_clean" / "stationen.csv"
 SNOW = ROOT / "data_clean" / "daily_snow.parquet"
 OUT_STATIONS = ROOT / "data_clean" / "resort_stations.csv"

@@ -54,3 +54,32 @@
 - Check: hand calculation = code (15 Jan, train Halbtax, v = 20: B 220.91 − P 58 − K 40 − v·T 77.33 = CS 45.58)
 - Season result (train, Halbtax): CS CHF 26–56; lowest around Christmas/New Year (prices CHF 68–69, little snow), weekends visible as dips (CS mirrors the price)
 - Limitation: late April has the highest CS (cheapest price, full snow score) → spring snow quality and lift closures not modelled
+
+## Resort list and attributes (tasks 9 and 10.1, 16 Nov 2026)
+- Resort list: 20 resorts (column `selected` in `docs/resort_candidates.csv`) = all 13 scrapable + 7 with tariff fallback (Flumserberg, Hoch-Ybrig, Stoos, Jungfrau, Davos Klosters, Arosa Lenzerheide, Andermatt-Sedrun-Disentis); more only if time at the end
+- Split into 25 rows in `docs/resort_attributes.csv` (one row per ski area as listed on Skiresort.info):
+  - Verbier + Nendaz merged into 'Verbier/4 Vallées' (one area on Skiresort.info); Nendaz replaced by Saas-Fee
+  - Zermatt incl. Cervinia (price must be the international pass → check in task 11)
+  - Davos Klosters split into Parsenn, Jakobshorn, Rinerhorn, Madrisa (Pischa dropped: 0 km of pistes, freeride only)
+  - Jungfrau split into Kleine Scheidegg/Männlichen, First, Schilthorn/Mürren
+  - Andermatt = Andermatt/Oberalp/Sedrun (without Gemsstock and Disentis); Toggenburg = Chäserrugg (Pricenow product)
+  - Split areas need their own price (Davos and Jungfrau tariffs per area, task 11)
+- Attributes and default weights (CHF): piste km 30, lifts 5, vertical drop 15, top altitude 10, snowmaking share 5, difficulty mix 10, snow depth 25, new snow 10, family / freeride / parks 5 each
+  - Difficulty mix = share of km at the user's level (beginner / intermediate / expert → blue / red / black km)
+- Source: Skiresort.info for all attributes (same measure for every resort); coordinates = valley stations from Google Maps (Crans-Montana and Lenzerheide corrected from mountain/middle station to valley station)
+- Family / freeride / parks: Skiresort.info test ratings (1–5 stars), scaled (stars − 1) / 4, instead of 0/1 → finer and one rule for all resorts; Chäserrugg has no test report → neutral 0.5
+- Ski routes (e.g. Laax 40 km) not counted in piste km (not groomed; covered by the freeride rating)
+- Engelberg lifts 17 → 18 (Skiresort.info, 16 Nov)
+- Spot check (Laax, Stoos, Parsenn, Verbier/4 Vallées): all values match Skiresort.info
+- Reference ranges for scaling: set once from the real min/max of the resorts (task 10.3), not min-max across the list → B must not depend on which resorts are in the list
+
+## Resort attribute cleaning (task 10.2, 17 Nov 2026)
+- Input: `docs/resort_attributes.csv` (hand-collected, versioned in the repo) instead of `data_raw/` → `data_raw/` is not in the repo, so a script reading from it could not be reproduced
+- Output: `data_clean/resorts.csv` = the one attribute table that the app and all scripts read; written only by `scripts/clean_resorts.py`
+- Types: resort names stripped of leading/trailing spaces (a trailing space would make merges fail silently); `collected_on` as date; star ratings as integers that allow missing values (`Int64`)
+- Missing values: only Chäserrugg (Toggenburg) has none of the three ratings (no Skiresort.info test report) → kept as missing (`<NA>`) in `resorts.csv`, not filled with 3 stars
+  - Reason: the clean table should only contain what the source says; a filled-in 3 would look like a real Skiresort.info rating
+  - The "neutral" assumption sits in one place, the model: `scale()` in `src/finder.py` turns a missing value into 0.5 (= same as 3 stars) → Chäserrugg is neither rewarded nor penalised for family / freeride / parks
+- Merge key: new column `resort_id`, generated from the name (lowercase, ä/ö/ü → ae/oe/ue, accents removed, other characters → `_`), e.g. 'Davos Klosters – Parsenn' → `davos_klosters_parsenn`; `resort` stays as the display name
+  - Reason: names contain en dashes, `/`, accents and umlauts → easy to mistype in other files (prices, fares, parking), and a mistyped key drops the resort from a merge without an error
+  - Script checks that all 25 ids are unique

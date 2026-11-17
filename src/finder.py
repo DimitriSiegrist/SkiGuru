@@ -19,7 +19,7 @@ DEFAULT_WEIGHTS = {"piste_km": 30, "lifts": 5, "vertical_drop": 15, "top_alt": 1
 def load_data():
     """All inputs as DataFrames (attributes, prices, snow, train, car)."""
     return {
-        "attrs": pd.read_csv(ROOT / "docs" / "resort_attributes.csv"),
+        "attrs": pd.read_csv(ROOT / "data_clean" / "resorts.csv"),
         "prices": pd.read_csv(ROOT / "data_clean" / "prices.csv"),
         "snow": pd.read_csv(ROOT / "data_clean" / "snow_expected.csv"),
         "train": pd.read_csv(ROOT / "data_clean" / "travel_train.csv"),
