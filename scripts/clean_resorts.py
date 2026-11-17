@@ -22,6 +22,19 @@ def make_id(name):
     return re.sub(r"[^a-z0-9]+", "_", name).strip("_")
 
 
+def check(df):
+    """Plausibility checks: stop the script if a value cannot be right."""
+    assert (df["vertical_drop"] == df["top_alt"] - df["base_alt"]).all(), "vertical drop ≠ top − base"
+    km_sum = df["km_blue"] + df["km_red"] + df["km_black"]
+    assert ((km_sum - df["piste_km"]).abs() < 0.5).all(), "blue + red + black ≠ piste km"
+    assert (df["base_alt"] < df["top_alt"]).all(), "base altitude above top altitude"
+    assert df["snowmaking_share"].between(0, 1).all(), "snowmaking share outside 0–1"
+    for col in ["rating_family", "rating_freeride", "rating_park"]:
+        assert df[col].dropna().between(1, 5).all(), f"{col} outside 1–5 stars"
+    assert df["lat"].between(45.8, 47.9).all() and df["lon"].between(5.9, 10.5).all(), "coordinates outside Switzerland"
+    print("All checks passed")
+
+
 def main():
     df = pd.read_csv(RAW)
     # types
@@ -33,6 +46,10 @@ def main():
     # merge key
     df.insert(0, "resort_id", df["resort"].map(make_id))
     assert df["resort_id"].is_unique, "two resorts have the same resort_id"
+
+
+    check(df)
+
 
     # save
     OUT.parent.mkdir(exist_ok=True)

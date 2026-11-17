@@ -83,3 +83,16 @@
 - Merge key: new column `resort_id`, generated from the name (lowercase, ä/ö/ü → ae/oe/ue, accents removed, other characters → `_`), e.g. 'Davos Klosters – Parsenn' → `davos_klosters_parsenn`; `resort` stays as the display name
   - Reason: names contain en dashes, `/`, accents and umlauts → easy to mistype in other files (prices, fares, parking), and a mistyped key drops the resort from a merge without an error
   - Script checks that all 25 ids are unique
+
+## Plausibility checks (task 10.3, 17 Nov 2026)
+- `check()` in `scripts/clean_resorts.py` runs before saving and stops the script if a value cannot be right → a wrong value never reaches `data_clean/resorts.csv` or the app; checks re-run automatically whenever the data changes
+  - vertical drop = top − base altitude (exact)
+  - blue + red + black km = piste km (tolerance 0.5 km for decimal rounding)
+  - base altitude < top altitude; snowmaking share 0–1; ratings 1–5 stars (missing skipped)
+  - coordinates inside a rough box around Switzerland (lat 45.8–47.9, lon 5.9–10.5) → catches swapped lat/lon and typos
+- Result: all 25 resorts pass all checks
+- Min/max of the 25 resorts: piste km 26–412 (Madrisa – Verbier/4 Vallées), lifts 7–65 (Rinerhorn – Verbier), vertical drop 635–2337 m (Stoos – Zermatt), top altitude 1831–3899 m (Hoch-Ybrig – Zermatt), snowmaking 0.12–0.95, ratings 1–5 stars (freeride 3–5)
+- Pilot ranges were too narrow: piste km 0–300 (Verbier and Zermatt both capped at 1 → the two largest areas looked equal), vertical drop 0–2200 (Zermatt capped), top altitude 1500–3500 (Zermatt and Saas-Fee capped); lower bounds of 0 far below every real resort
+- New fixed reference ranges = real min/max rounded outward to round numbers: piste km 25–425, lifts 5–70, vertical drop 600–2400 m, top altitude 1800–3900 m; snowmaking 0–1 and ratings 1–5 kept (natural scales)
+  - Reason: weights are defined as CHF for the best vs. the worst value → range ≈ worst to best real resort; rounded numbers are easy to explain and leave a little room for resorts added later; set once (not min-max across the list) so B does not change when a resort is added
+  - Side effect: lower bounds above 0 → scaled values and B lower for all resorts → CS levels fall (Engelberg lower than in the pilot); differences between resorts become clearer
