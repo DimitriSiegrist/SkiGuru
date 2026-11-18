@@ -25,6 +25,14 @@ RESORTS = {
         "person_type": "adult_age20to999",
         "label_prefix": "1 Tag ",
     },
+        "flims_laax_falera": {
+        "parser": "pricenow",
+        "product": 1190144,
+        "channel_uuid": "e3570742-351d-420b-8f86-ab31a1363e10",
+        "shop": "https://shop.laax.com",
+        "person_type": "adult",
+        "label_prefix": "2026/27",
+    },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
 
