@@ -10,67 +10,100 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-OUT = Path(__file__).resolve().parents[1] / "data_clean" / "prices.csv"
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "data_clean" / "prices.csv"
 
-URL = "https://api.pricenow.dev/api/booking/products/180000/journey/validities"
-HEADERS = {
-    "pratiq-channel-uuid": "dbe49cb5-8c06-498a-901c-fbf65d1166e5",
-    "pratiq-api-version": "2025-02-18",
-    "pratiq-superjson": "true",
-    "accept-language": "en",
-    "content-type": "application/json",
-    "Origin": "https://shop.titlis.ch",
-    "Referer": "https://shop.titlis.ch/",
-    "User-Agent": "SkiGuru student project (UZH, non-commercial)",
-}
-FORM_STATE = {
-    "allocation": {"kind": "persontype",
-                   "values": [{"kind": "anonymous", "quantity": 1,
-                               "personType": "adult_age20to999"}]},
-    "attributes": {"duration": "1d"},
+USER_AGENT = "SkiGuru student project (UZH, non-commercial)"
+
+# one entry per resort: which parser to use and its parameters (task 11.1)
+RESORTS = {
+    "engelberg_titlis": {
+        "parser": "pricenow",
+        "product": 180000,
+        "channel_uuid": "dbe49cb5-8c06-498a-901c-fbf65d1166e5",
+        "shop": "https://shop.titlis.ch",
+        "person_type": "adult_age20to999",
+        "label_prefix": "1 Tag ",
+    },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
 
 
-def fetch_month(year, month):
-    """Day-pass prices (CHF) for one month."""
+def fetch_pricenow_month(cfg, year, month):
+    """Day-pass prices (CHF) for one month from the Pricenow calendar endpoint."""
+    url = f"https://api.pricenow.dev/api/booking/products/{cfg['product']}/journey/validities"
+    headers = {
+        "pratiq-channel-uuid": cfg["channel_uuid"],
+        "pratiq-api-version": "2025-02-18",
+        "pratiq-superjson": "true",
+        "accept-language": "en",
+        "content-type": "application/json",
+        "Origin": cfg["shop"],
+        "Referer": cfg["shop"] + "/",
+        "User-Agent": USER_AGENT,
+    }
+    form_state = {
+        "allocation": {"kind": "persontype",
+                       "values": [{"kind": "anonymous", "quantity": 1,
+                                   "personType": cfg["person_type"]}]},
+        "attributes": {"duration": "1d"},
+    }
     start = pd.Timestamp(year=year, month=month, day=1, tz="Europe/Zurich")
     end = start + pd.DateOffset(months=1) - pd.Timedelta(milliseconds=1)
     params = {
         "from": start.to_pydatetime().isoformat(timespec="milliseconds"),
         "to": end.to_pydatetime().isoformat(timespec="milliseconds"),
-        "formState": json.dumps(FORM_STATE, separators=(",", ":")),
+        "formState": json.dumps(form_state, separators=(",", ":")),
     }
-    r = requests.get(URL, headers=HEADERS, params=params, timeout=20)
+    r = requests.get(url, headers=headers, params=params, timeout=20)
     r.raise_for_status()
     options = r.json()["json"]["data"]["options"]
     if not options:
         return pd.DataFrame(columns=["date", "price"])
 
     raw = pd.json_normalize(options)
-    day = raw[raw["label"].str.startswith("1 Tag ") & raw["isAvailable"]].copy()
+    day = raw[raw["label"].str.startswith(cfg["label_prefix"]) & raw["isAvailable"]].copy()
     day["date"] = pd.to_datetime(day["value.from"]).dt.tz_convert("Europe/Zurich").dt.date
-    day["price"] = day["price.minPrice"] / 100
+    day["price"] = day["price.minPrice"] / 100  # Rappen → CHF
     return day[["date", "price"]]
 
 
-def main():
+def scrape_pricenow(cfg):
+    """All months of the season for one Pricenow resort."""
     frames = []
     for y, m in MONTHS:
-        frames.append(fetch_month(y, m))
+        frames.append(fetch_pricenow_month(cfg, y, m))
         time.sleep(2)  # politeness: pause between requests
+    return pd.concat(frames, ignore_index=True)
+
+
+# one function per platform; the resort config says which one to use
+PARSERS = {"pricenow": scrape_pricenow}
+
+
+def main():
+    # display names from the clean resort table (resort_id → resort)
+    names = pd.read_csv(ROOT / "data_clean" / "resorts.csv").set_index("resort_id")["resort"]
+
+    frames = []
+    for rid, cfg in RESORTS.items():
+        df = PARSERS[cfg["parser"]](cfg)
+        df["resort_id"] = rid
+        df["resort"] = names[rid]
+        df["source"] = cfg["parser"]
+        frames.append(df)
+        print(f"{rid}: {len(df)} days")
 
     new = pd.concat(frames, ignore_index=True)
-    new["resort"] = "Engelberg-Titlis"
     new["scraped_on"] = date.today()
     new["days_ahead"] = (pd.to_datetime(new["date"]) - pd.to_datetime(new["scraped_on"])).dt.days
-    new = new[["resort", "date", "price", "scraped_on", "days_ahead"]]
+    new = new[["resort_id", "resort", "date", "price", "source", "scraped_on", "days_ahead"]]
+    new = new.astype({"date": str, "scraped_on": str})
 
     # keep earlier scrapes (one row per resort, date and scrape day)
     if OUT.exists():
-        old = pd.read_csv(OUT)
-        new = pd.concat([old, new.astype({"date": str, "scraped_on": str})], ignore_index=True)
-        new = new.drop_duplicates(["resort", "date", "scraped_on"], keep="last")
+        new = pd.concat([pd.read_csv(OUT), new], ignore_index=True)
+        new = new.drop_duplicates(["resort_id", "date", "scraped_on"], keep="last")
 
     new.to_csv(OUT, index=False)
     print(f"Saved {len(new)} rows to {OUT}")
