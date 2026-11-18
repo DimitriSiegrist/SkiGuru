@@ -33,6 +33,14 @@ RESORTS = {
         "person_type": "adult",
         "label_prefix": "2026/27",
     },
+        "toggenburg_chaeserrugg": {
+        "parser": "pricenow",
+        "product": 110000,
+        "channel_uuid": "57a22950-c9ed-4a1d-b7e9-a18edccc65a5",
+        "shop": "https://shop.chaeserrugg.ch",
+        "person_type": "adult",
+        "label_prefix": "4h & 1d Ski Ticket",
+    },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
 
