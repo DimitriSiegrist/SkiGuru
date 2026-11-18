@@ -41,6 +41,12 @@ RESORTS = {
         "person_type": "adult",
         "label_prefix": "4h & 1d Ski Ticket",
     },
+        "adelboden_lenk": {
+        "parser": "adelboden",
+        "url": "https://www.adelboden-lenk.ch/en/shop/json/ticket/dates/51393/4344",
+        "ticket_id": 123,
+        "price_group": "4180",  # adult (defaultPriceGroup)
+    },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
 
@@ -93,9 +99,38 @@ def scrape_pricenow(cfg):
     return pd.concat(frames, ignore_index=True)
 
 
-# one function per platform; the resort config says which one to use
-PARSERS = {"pricenow": scrape_pricenow}
+# ---------- parser 2: Adelboden-Lenk (own API, monthly calendar) ----------
 
+def fetch_adelboden_month(cfg, year, month):
+    """Day-pass prices (CHF) for one month from the Adelboden-Lenk shop calendar."""
+    params = {"ticketId": cfg["ticket_id"], "year": year, "month": month}
+    r = requests.get(cfg["url"], headers={"User-Agent": USER_AGENT}, params=params, timeout=20)
+    r.raise_for_status()
+    dates = r.json()["calendarConfiguration"]["calendar"]["dates"]
+
+    rows = []
+    for d in dates:
+        if d["disabled"]:  # closed day or outside the season
+            continue
+        rows.append({"date": d["date"][:10],  # "2026-12-13T00:00:00" → "2026-12-13"
+                     "price": d["priceByPriceGroup"][cfg["price_group"]]["price"]})
+    df = pd.DataFrame(rows, columns=["date", "price"])
+
+    # the calendar also shows days of the neighbouring months → keep only this month
+    return df[pd.to_datetime(df["date"]).dt.month == month]
+
+
+def scrape_adelboden(cfg):
+    """All months of the season for Adelboden-Lenk."""
+    frames = []
+    for y, m in MONTHS:
+        frames.append(fetch_adelboden_month(cfg, y, m))
+        time.sleep(2)  # politeness: pause between requests
+    return pd.concat(frames, ignore_index=True)
+
+
+# one function per platform; the resort config says which one to use
+PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden}
 
 def main():
     # display names from the clean resort table (resort_id → resort)
