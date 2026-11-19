@@ -25,7 +25,7 @@ RESORTS = {
         "person_type": "adult_age20to999",
         "label_prefix": "1 Tag ",
     },
-        "flims_laax_falera": {
+    "flims_laax_falera": {
         "parser": "pricenow",
         "product": 1190144,
         "channel_uuid": "e3570742-351d-420b-8f86-ab31a1363e10",
@@ -33,7 +33,7 @@ RESORTS = {
         "person_type": "adult",
         "label_prefix": "2026/27",
     },
-        "toggenburg_chaeserrugg": {
+    "toggenburg_chaeserrugg": {
         "parser": "pricenow",
         "product": 110000,
         "channel_uuid": "57a22950-c9ed-4a1d-b7e9-a18edccc65a5",
@@ -41,19 +41,38 @@ RESORTS = {
         "person_type": "adult",
         "label_prefix": "4h & 1d Ski Ticket",
     },
-        "adelboden_lenk": {
+    "adelboden_lenk": {
         "parser": "adelboden",
         "url": "https://www.adelboden-lenk.ch/en/shop/json/ticket/dates/51393/4344",
         "ticket_id": 123,
         "price_group": "4180",  # adult (defaultPriceGroup)
     },
-        "verbier_4_vallees": {
+    "verbier_4_vallees": {
         "parser": "verbier",
         "url": "https://verbier4vallees.ch/en/shop/ticket/json/pricing",
         "ticket_id": 159334,
         "sector": 159527,
         "product": "0153468",      # 1 day 4Vallées
         "price_group": "0389176",  # Adult (1950-2001)
+    },
+    "grimentz_zinal": {
+        "parser": "grimentz",
+        "url": "https://grimentzinal.rma.ch/proxy/call/simulationResolver",
+        "shop": "https://grimentzinal.rma.ch/en/",
+        "validity": "1DAY",
+        "ctid": 234,
+        "product": "ANNIVIERS",  # 1 jour Val d'Anniviers
+        "consumer": "ADULT",
+        "season_start": "2026-12-18",  # API also prices closed days → drop days before opening
+        "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRJZCI6MzY5LCJhY3Rpb25zIjp7InNpbXVsYXRpb25SZXNvbHZlciI6eyJjb250cm9sbGVyIjoiUmVkcGlsbEJ1bmRsZTpBcGlcXFYyXFxTaW11bGF0aW9uOmdldFNpbXVsYXRpb25XaXRoUmVzb2x2ZXIiLCJyZXNvdXJjZSI6IlNpbXVsYXRpb24ifSwib2ZmZXJzU2VhcmNoIjp7ImNvbnRyb2xsZXIiOiJSZWRwaWxsQnVuZGxlOkFwaVxcVjJcXE9mZmVyczpzZWFyY2giLCJyZXNvdXJjZSI6Ik9mZmVycyJ9LCJwcm9kdWN0cyI6eyJjb250cm9sbGVyIjoiUmVkcGlsbEJ1bmRsZTpBcGlcXFYyXFxQcm9kdWN0OmNnZXQiLCJyZXNvdXJjZSI6IlByb2R1Y3QifX19.eeVxzUXDrgvhFDKrHfe7yT8J9bbjVbky0wKl5t0Rmy4",
+    },
+    "zermatt_matterhorn_ski_paradise": {
+        "parser": "zermatt",
+        "url": "https://www.matterhornparadise.ch/de/shop/ticket/pricing",
+        "shop": "https://www.matterhornparadise.ch/de/buchen/tickets/skipass-winter",
+        "ticket_id": 1501805,     # 1 Tag Skipass Zermatt
+        "upgrade": 520187,        # International (+ Breuil-Cervinia/Valtournenche), matches the attributes
+        "price_group": "502338",  # Erwachsen (adult)
     },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
@@ -168,9 +187,79 @@ def scrape_verbier(cfg):
     return pd.DataFrame(rows, columns=["date", "price"])
 
 
+# ---------- parser 4: Grimentz-Zinal (own API, rma.ch, one request per day) ----------
+
+def fetch_grimentz_day(cfg, day):
+    """Adult price (CHF) for one day; None if no ticket is sold that day."""
+    params = {"vc": cfg["validity"], "s": day, "ctid": cfg["ctid"],
+              "pc": cfg["product"], "sk[0][cc]": cfg["consumer"]}
+    headers = {"accept": "application/json;version=v2",
+               "jwt": cfg["jwt"],  # public shop token (no expiry), sent by the shop with every request
+               "referer": cfg["shop"],
+               "User-Agent": USER_AGENT}
+    r = requests.get(cfg["url"], headers=headers, params=params, timeout=20)
+    if r.status_code != 200:  # closed day or outside the season → error page
+        return None
+    total = r.json().get("total")
+    return total / 100 if total else None  # Rappen → CHF
+
+
+def scrape_grimentz(cfg):
+    """All days of the season for Grimentz-Zinal."""
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+
+    rows = []
+    for day in pd.date_range(first, last).strftime("%Y-%m-%d"):
+        price = fetch_grimentz_day(cfg, day)
+        if price is not None:
+            rows.append({"date": day, "price": price})
+        time.sleep(1)  # politeness: ~150 requests → about 3 minutes
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
+# ---------- parser 5: Zermatt (own API, one request per day, International upgrade) ----------
+
+def fetch_zermatt_day(session, cfg, day):
+    """Adult price (CHF) for one day, International pass without extra insurance; None if not sold."""
+    params = {"ticketId": cfg["ticket_id"], "selectedDateStart": f"{day}T00:00:00"}
+    r = session.get(cfg["url"], params=params, timeout=20)
+    if r.status_code != 200:
+        return None
+
+    for conf in r.json().get("priceConfigurations", []):
+        if conf["upgradeCatalog"] == cfg["upgrade"] and conf["insurance"] == "no_insurance":
+            for group in conf["priceByPriceGroup"]:
+                if group["id"] == cfg["price_group"]:
+                    return group["price"]
+    return None
+
+
+def scrape_zermatt(cfg):
+    """All days of the season for Zermatt (incl. Cervinia)."""
+    session = requests.Session()  # keeps the shop's session cookie (PHPSESSID)
+    session.headers.update({"Accept": "application/json, text/plain, */*",
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Referer": cfg["shop"],
+                            "User-Agent": USER_AGENT})
+    session.get(cfg["shop"], timeout=20)  # open the shop page once → session cookie
+
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+
+    rows = []
+    for day in pd.date_range(first, last).strftime("%Y-%m-%d"):
+        price = fetch_zermatt_day(session, cfg, day)
+        if price is not None:
+            rows.append({"date": day, "price": price})
+        time.sleep(1)  # politeness: ~150 requests → about 3 minutes
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
 # one function per platform; the resort config says which one to use
 PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
-           "verbier": scrape_verbier}
+           "verbier": scrape_verbier, "grimentz": scrape_grimentz,
+           "zermatt": scrape_zermatt}
 
 
 def main():
@@ -180,6 +269,8 @@ def main():
     frames = []
     for rid, cfg in RESORTS.items():
         df = PARSERS[cfg["parser"]](cfg)
+        if "season_start" in cfg:  # optional: drop days before the area opens
+            df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
         df["resort_id"] = rid
         df["resort"] = names[rid]
         df["source"] = cfg["parser"]
