@@ -47,6 +47,14 @@ RESORTS = {
         "ticket_id": 123,
         "price_group": "4180",  # adult (defaultPriceGroup)
     },
+        "verbier_4_vallees": {
+        "parser": "verbier",
+        "url": "https://verbier4vallees.ch/en/shop/ticket/json/pricing",
+        "ticket_id": 159334,
+        "sector": 159527,
+        "product": "0153468",      # 1 day 4Vallées
+        "price_group": "0389176",  # Adult (1950-2001)
+    },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
 
@@ -129,8 +137,41 @@ def scrape_adelboden(cfg):
     return pd.concat(frames, ignore_index=True)
 
 
+# ---------- parser 3: Verbier/4 Vallées (own API, one request per day) ----------
+
+def fetch_verbier_day(cfg, day):
+    """Adult online price (CHF) for one day; None if no ticket is sold that day."""
+    params = {"ticket_id": cfg["ticket_id"], "startDate": day,
+              "vipPasses": "", "sector": cfg["sector"]}
+    r = requests.get(cfg["url"], headers={"User-Agent": USER_AGENT}, params=params, timeout=20)
+    r.raise_for_status()
+
+    for product in r.json()["productChoices"]:  # empty list = closed day
+        if product["id"] == cfg["product"]:
+            for group in product["priceGroups"]:
+                if group["id"] == cfg["price_group"]:
+                    return group["price"]  # online price (basePrice − 10 %)
+    return None
+
+
+def scrape_verbier(cfg):
+    """All days of the season for Verbier/4 Vallées."""
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+
+    rows = []
+    for day in pd.date_range(first, last).strftime("%Y-%m-%d"):
+        price = fetch_verbier_day(cfg, day)
+        if price is not None:
+            rows.append({"date": day, "price": price})
+        time.sleep(1)  # politeness: ~150 requests → about 3 minutes
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
 # one function per platform; the resort config says which one to use
-PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden}
+PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
+           "verbier": scrape_verbier}
+
 
 def main():
     # display names from the clean resort table (resort_id → resort)
