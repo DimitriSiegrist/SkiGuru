@@ -93,6 +93,29 @@ RESORTS = {
         "region": "Belalp",
         "variant_name": "Skipass Blatten - Belalp 1 Tag Erwachsener",
     },
+    "leukerbad": {
+        "parser": "deskline",
+        "shop": "https://leukerbad.ch",
+        "client": "leukerbad",
+        "shop_code": "SAA",
+        "service_id": "e2fb9a0d-a17c-42fa-a2b8-47bee03f6ad6",  # ski ticket 1 day
+        "product_id": "afd8f7d9-4c23-4c91-8d5a-d2bfb61e73a6",  # adult (CHF 68 on 13 Jan; the other product is 41)
+        "lim_add_srv_type": ("31efd700-a114-4f30-80d6-f054fa1b7442,1e97cf6c-81e4-41c2-9d90-7d8eb5f4170d,"
+                             "a0bc0a6c-0d0f-4716-9940-eacd1c97ef4c,291afea7-e73b-4b29-9c70-778b3d2414c2"),
+        # API also prices closed days → keep only the days bookable in the shop
+        "open_periods": [("2026-12-05", "2026-12-06"), ("2026-12-12", "2027-04-04")],
+    },
+    "savognin": {
+        "parser": "deskline_search",
+        "shop": "https://www.valsurses.ch",
+        "client": "savognin",
+        "shop_code": "CH1",
+        "provider_id": "ef17832f-6ccf-40ed-9051-a35c2acdbe60",
+        "service_id": "02c65dae-c2bf-430f-8c8e-1a66418135aa",
+        "product_id": "8c33589b-29cd-4759-b878-469409fd652e",  # Erwachsen (adult)
+        "theme": "cb0af051-161c-47e1-b089-0cb9782b9eff",
+        "open_periods": [("2026-12-05", "2026-12-06"), ("2026-12-12", "2027-03-29")],
+    },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
 
@@ -311,10 +334,114 @@ def scrape_peaksolution(cfg):
     return pd.DataFrame(rows, columns=["date", "price"])
 
 
+# ---------- parser 7: Deskline / Feratel (Leukerbad; one request per day) ----------
+
+def fetch_deskline_day(cfg, day):
+    """Adult price (CHF) for one day; None if the product has no price that day."""
+    d = pd.Timestamp(day)
+    url = (f"https://webapi.deskline.net/{cfg['client']}/en/addservices/"
+           f"{cfg['shop_code']}/services/{cfg['service_id']}")
+    params = {
+        # the shop writes the date without leading zeros, e.g. 2027-1-13
+        "fields": f'axessData(date:"{d.year}-{d.month}-{d.day}"){{startTime,products{{id,price,availability}}}}',
+        "limAddSrvType": cfg["lim_add_srv_type"],
+    }
+    headers = {"accept": "application/json, text/plain, */*",
+               "dw-sessionid": f"I{int(time.time() * 1000)}",  # the shop uses "I" + timestamp
+               "dw-source": "desklineweb",
+               "origin": cfg["shop"],
+               "referer": cfg["shop"] + "/",
+               "User-Agent": USER_AGENT}
+    r = requests.get(url, headers=headers, params=params, timeout=20)
+    if r.status_code != 200:
+        return None
+
+    for block in r.json().get("axessData") or []:
+        for product in block.get("products") or []:
+            if product["id"] == cfg["product_id"]:
+                return product["price"]
+    return None
+
+
+def scrape_deskline(cfg):
+    """All days of the season for one Deskline resort."""
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+
+    rows = []
+    for day in pd.date_range(first, last).strftime("%Y-%m-%d"):
+        price = fetch_deskline_day(cfg, day)
+        if price is not None:
+            rows.append({"date": day, "price": price})
+        time.sleep(1)  # politeness: ~150 requests → about 3 minutes
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
+# the exact field list the Savognin shop asks for (copied from the shop's request)
+RESULT_FIELDS = ("id,name,isFreeBookable,isOwnAvailability,priceChoosableByGuest{active,minPrice,maxPrice},"
+                 "bookInfo{date,startTime,duration,price,insteadPrice,availability,isBookable,"
+                 "isBookableOnRequest,isOfferable,paymentCancellationPolicy{cancellationPolicy{"
+                 "cancellationTextType,defaultHeaderTextNumber,hasFreeCancellation,lastFreeDate,lastFreeTime,"
+                 "textLines{cancellationCalculationType,cancellationNights,cancellationPercentage,"
+                 "defaultTextNumber,hasFreeTime,freeTime,cancellationDate}}}}")
+
+
+def scrape_deskline_search(cfg):
+    """Deskline with a search (Savognin): per month, create a search (POST), then read its results (GET)."""
+    headers = {"accept": "application/json, text/plain, */*",
+               "dw-sessionid": f"M{int(time.time() * 1000)}",  # the shop uses "M" + timestamp
+               "dw-source": "desklineweb",
+               "origin": cfg["shop"],
+               "referer": cfg["shop"] + "/",
+               "User-Agent": USER_AGENT}
+    results_url = (f"https://webapi.deskline.net/{cfg['client']}/de/addservices/{cfg['shop_code']}/"
+                   f"{cfg['provider_id']}/services/{cfg['service_id']}/searchresults/")
+
+    frames = []
+    for y, m in MONTHS:
+        start = pd.Timestamp(year=y, month=m, day=1)
+        end = start + pd.DateOffset(months=1)  # the shop searches up to the 1st of the next month
+        # 1) create the search for this month (POST) → the server returns its id and hash code
+        body = {"searchObject": {"searchGeneral": {"dateFrom": start.strftime("%Y-%m-%dT00:00:00.000"),
+                                                   "dateTo": end.strftime("%Y-%m-%dT00:00:00.000")},
+                                 "searchAddService": {"serviceProviders": [cfg["provider_id"]],
+                                                      "services": [cfg["service_id"]]}}}
+        r = requests.post("https://webapi.deskline.net/searches", headers=headers, json=body, timeout=20)
+        if not r.ok:  # show the server's reason, not only the status code
+            raise RuntimeError(f"search {y}-{m}: {r.status_code} {r.text[:500]}")
+        search_id, hash_code = r.json()["id"], r.json()["hashCode"]
+        time.sleep(1)
+
+        # 2) read the prices of all days of the month
+        params = {"filterId": "", "fields": RESULT_FIELDS,
+                  "sortingFields": "", "currency": "CHF", "hashS": hash_code,
+                  "limAddSrvTHEME": cfg["theme"]}
+        for attempt in range(3):  # the results can be empty while the server is still searching
+            r = requests.get(results_url + search_id, headers=headers, params=params, timeout=20)
+            if r.status_code == 204 or (r.ok and r.text.strip()):
+                break
+            time.sleep(2)
+        if r.status_code == 204:  # no content = no ticket sold in this month (e.g. April after closing)
+            time.sleep(2)
+            continue
+        if not (r.ok and r.text.strip()):
+            raise RuntimeError(f"results {y}-{m}: {r.status_code} {r.text[:500]!r}")
+        for product in r.json()["data"]:
+            if product["id"] == cfg["product_id"]:
+                days = pd.DataFrame([{"date": b["date"][:10], "price": b["price"]}
+                                     for b in product["bookInfo"] if b["isBookable"]],
+                                    columns=["date", "price"])
+                # the search also returns the 1st of the next month → keep only this month
+                frames.append(days[pd.to_datetime(days["date"]).dt.month == m])
+        time.sleep(2)  # politeness: pause between months
+    return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["date", "price"])
+
+
 # one function per platform; the resort config says which one to use
 PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
            "verbier": scrape_verbier, "grimentz": scrape_grimentz,
-           "zermatt": scrape_zermatt, "peaksolution": scrape_peaksolution}
+           "zermatt": scrape_zermatt, "peaksolution": scrape_peaksolution,
+           "deskline": scrape_deskline, "deskline_search": scrape_deskline_search}
 
 
 def main():
@@ -331,6 +458,12 @@ def main():
         df = PARSERS[cfg["parser"]](cfg)
         if "season_start" in cfg:  # optional: drop days before the area opens
             df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
+        if "open_periods" in cfg:  # optional: keep only days inside the open periods
+            d = pd.to_datetime(df["date"])
+            is_open = pd.Series(False, index=df.index)
+            for lo, hi in cfg["open_periods"]:
+                is_open |= d.between(lo, hi)
+            df = df[is_open]
         df["resort_id"] = rid
         df["resort"] = names[rid]
         df["source"] = cfg["parser"]
