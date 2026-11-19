@@ -3,6 +3,7 @@
 Run from the repo root:  python scripts/scrape_prices.py
 """
 import json
+import re
 import sys
 import time
 from datetime import date
@@ -115,6 +116,58 @@ RESORTS = {
         "product_id": "8c33589b-29cd-4759-b878-469409fd652e",  # Erwachsen (adult)
         "theme": "cb0af051-161c-47e1-b089-0cb9782b9eff",
         "open_periods": [("2026-12-05", "2026-12-06"), ("2026-12-12", "2027-03-29")],
+    },
+    "arosa_lenzerheide": {
+        "parser": "arosa",
+        "url": "https://shop.arosalenzerheide.swiss/ajax/ticket-day-price/127",
+        "shop": "https://shop.arosalenzerheide.swiss/en/1-day-ski-ticket_ticket_127",
+        "ticket_id": "skid-aldprod_35c48fcf-c593-7cba-4472-b9e6a271c54b",  # 1-day ski ticket
+    },
+    "saas_fee": {
+        "parser": "deskline_search",
+        "shop": "https://www.saas-fee.ch",
+        "client": "saasfee",
+        "shop_code": "SAA",
+        "provider_id": "3e332610-e10e-4216-a072-c46d8c2a5108",  # Saastal Bergbahnen AG
+        "service_id": "4a9e43af-aba2-4d40-8a21-2011be4e920a",   # Saas-Fee | 1 Day
+        "product_id": "70de5028-3939-444f-8d24-78516fd58f27",   # Saas-Fee | 1 Day Adulte
+    },
+    # Davos: the shop only sells Parsenn and Jakobshorn together (region 11664) → same price for both
+    "davos_klosters_parsenn": {"parser": "davos", "url": "https://www.davosklostersmountains.ch/en/mountains/webshop/winter-tickets", "region": 11664},
+    "davos_klosters_jakobshorn": {"parser": "davos", "url": "https://www.davosklostersmountains.ch/en/mountains/webshop/winter-tickets", "region": 11664},
+    "davos_klosters_rinerhorn": {"parser": "davos", "url": "https://www.davosklostersmountains.ch/en/mountains/webshop/winter-tickets", "region": 1237},
+    "davos_klosters_madrisa": {"parser": "davos", "url": "https://www.davosklostersmountains.ch/en/mountains/webshop/winter-tickets", "region": 1233},
+    # Jungfrau: one ski pass for the whole region → same price for all three areas
+    # price per level from the tariff 26/27 (adult): regular 79, high season / weekends 83 (checked in the shop 19 Nov)
+    "jungfrau_kleine_scheidegg_maennlichen": {"parser": "jungfrau", "url": "https://jts.jungfrau.ch/api/v1/activities/19fa6d77-9437-44a5-8c19-4184a16912b6/availabilities",
+                                              "price_by_level": {"REGULAR": 79, "HIGH": 83}},
+    "jungfrau_first": {"parser": "jungfrau", "url": "https://jts.jungfrau.ch/api/v1/activities/19fa6d77-9437-44a5-8c19-4184a16912b6/availabilities", "price_by_level": {"REGULAR": 79, "HIGH": 83}},
+    "jungfrau_schilthorn_muerren": {"parser": "jungfrau", "url": "https://jts.jungfrau.ch/api/v1/activities/19fa6d77-9437-44a5-8c19-4184a16912b6/availabilities",
+                                    "price_by_level": {"REGULAR": 79, "HIGH": 83}},
+    # ---- fallback: fixed tariffs 26/27 (adult, 1 day), collected 19 Nov 2026 ----
+    "andermatt_sedrun": {
+        "parser": "tariff",
+        "price": 92,  # bought online before the ski day (96 on the day)
+        "premium_price": 99,
+        "premium_periods": [("2026-12-19", "2027-01-03"), ("2027-02-01", "2027-03-07")],
+        "open_periods": [("2026-12-01", "2027-04-18")],  # shop: bookable 20 Nov – 18 Apr
+    },
+    "flumserberg": {
+        "parser": "tariff",
+        "price": 72, "weekend_price": 76,  # Mon–Fri / Sat, Sun and cantonal holidays (SG)
+        "holidays": ["2026-12-25", "2026-12-26", "2027-01-01", "2027-01-02", "2027-03-26", "2027-03-29"],
+        "open_periods": [("2026-12-12", "2027-03-29")],  # ASSUMPTION: no dates published yet
+    },
+    "stoos": {
+        "parser": "tariff",
+        "price": 58,  # online shop (60 at the ticket office)
+        "weekends_only_until": "2026-12-11",  # Fronalpstock chairlifts: weekends only until 11 Dec
+        "open_periods": [("2026-12-01", "2027-03-29")],  # end ASSUMPTION: no date published
+    },
+    "hoch_ybrig": {
+        "parser": "tariff",
+        "price": 62,
+        "open_periods": [("2026-12-10", "2027-03-29")],  # start: tariff valid from 10 Dec; end ASSUMPTION
     },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
@@ -414,8 +467,9 @@ def scrape_deskline_search(cfg):
 
         # 2) read the prices of all days of the month
         params = {"filterId": "", "fields": RESULT_FIELDS,
-                  "sortingFields": "", "currency": "CHF", "hashS": hash_code,
-                  "limAddSrvTHEME": cfg["theme"]}
+                  "sortingFields": "", "currency": "CHF", "hashS": hash_code}
+        if "theme" in cfg:  # Savognin's shop sends a theme filter, Saas-Fee's does not
+            params["limAddSrvTHEME"] = cfg["theme"]
         for attempt in range(3):  # the results can be empty while the server is still searching
             r = requests.get(results_url + search_id, headers=headers, params=params, timeout=20)
             if r.status_code == 204 or (r.ok and r.text.strip()):
@@ -437,11 +491,131 @@ def scrape_deskline_search(cfg):
     return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=["date", "price"])
 
 
+# ---------- parser 9: Arosa Lenzerheide (own shop, monthly calendar) ----------
+
+def fetch_arosa_month(cfg, year, month):
+    """Day-pass prices (CHF) for one month from the Arosa Lenzerheide shop calendar."""
+    params = {"ticketId": cfg["ticket_id"], "year": year, "month": month}
+    headers = {"X-Requested-With": "XMLHttpRequest", "Referer": cfg["shop"], "User-Agent": USER_AGENT}
+    r = requests.get(cfg["url"], headers=headers, params=params, timeout=20)
+    r.raise_for_status()
+
+    rows = [{"date": d["date"][:10], "price": d["price"]}
+            for d in r.json()["dates"]["dates"]
+            if not d["isDisabled"] and d["price"] > 0]  # isDisabled "1" = no ticket that day
+    df = pd.DataFrame(rows, columns=["date", "price"])
+    # the calendar also shows days of the neighbouring months → keep only this month
+    return df[pd.to_datetime(df["date"]).dt.month == month]
+
+
+def scrape_arosa(cfg):
+    """All months of the season for Arosa Lenzerheide."""
+    frames = []
+    for y, m in MONTHS:
+        frames.append(fetch_arosa_month(cfg, y, m))
+        time.sleep(2)  # politeness: pause between requests
+    return pd.concat(frames, ignore_index=True)
+
+
+# ---------- parser 10: Davos Klosters (own webshop, server-rendered HTML, one request per day) ----------
+
+def fetch_davos_day(session, cfg, day):
+    """Adult price (CHF) for one day and area; None if the area sells no ticket that day."""
+    params = {"ajax": 1, "step": 4, "days": 1, "tickettype": 1,  # step 4 = "Who", 1 day, full day
+              "regions": cfg["region"], "datepicker-day": f"{day}T00:00:00"}
+    r = session.get(cfg["url"], params=params, timeout=20)
+    if r.status_code != 200:
+        return None
+    try:  # the shop answers with JSON {"success": ..., "html": "<page part>"}
+        html = r.json()["html"]
+    except ValueError:  # plain HTML (as in the browser)
+        html = r.text
+    html = re.sub(r"<[^>]+>", " ", html)  # drop the HTML tags, keep the text
+    html = re.sub(r"\s+", " ", html)
+    # first price after the adult box ("Adult" in English, "Erwachsene" in German)
+    m = re.search(r"(?:Adult|Erwachsen).{0,300}?CHF\s*([\d.]+)", html)
+    return float(m.group(1)) if m else None
+
+
+def scrape_davos(cfg):
+    """All days of the season for one Davos Klosters area."""
+    session = requests.Session()
+    session.headers.update({"User-Agent": USER_AGENT, "X-Requested-With": "XMLHttpRequest",
+                            "Accept-Language": "en", "Referer": cfg["url"]})
+    session.get(cfg["url"], timeout=20)  # open the shop page once → session cookie
+    # go through steps 2 and 3 once, like the shop: the server keeps days, ticket type and area in the session
+    base = {"ajax": 1, "days": 1, "tickettype": 1}
+    session.get(cfg["url"], params={**base, "step": 2}, timeout=20)
+    session.get(cfg["url"], params={**base, "step": 3, "regions": cfg["region"]}, timeout=20)
+
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+    rows = []
+    for day in pd.date_range(first, last).strftime("%Y-%m-%d"):
+        price = fetch_davos_day(session, cfg, day)
+        if price is not None:
+            rows.append({"date": day, "price": price})
+        elif day == "2027-01-13":  # a normal season day without a price → show what the server sent
+            r = session.get(cfg["url"], params={**base, "step": 4, "regions": cfg["region"],
+                                                "datepicker-day": f"{day}T00:00:00"}, timeout=20)
+            text = re.sub(r"<[^>]+>|\s+", " ", r.text)[:400]  # page text without HTML tags
+            print(f"  debug {cfg['region']} {day}: status {r.status_code}, {text!r}")
+        time.sleep(1)  # politeness: ~150 requests per area → about 3 minutes
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
+# ---------- parser 11: Jungfrau (jts.jungfrau.ch, price level per day → tariff) ----------
+
+def scrape_jungfrau(cfg):
+    """One request for the whole season: the API gives a price level (REGULAR / HIGH) per period,
+    the config maps each level to the adult tariff in CHF."""
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+    params = {"from": first.strftime("%Y-%m-%dT00:00"),
+              "to": (last + pd.Timedelta(days=1)).strftime("%Y-%m-%dT00:00")}
+    r = requests.get(cfg["url"], params=params, headers={"User-Agent": USER_AGENT}, timeout=20)
+    r.raise_for_status()
+
+    rows = []
+    for period in r.json()["availability"]:
+        if period["availability"] != "AVAILABLE":
+            continue
+        price = cfg["price_by_level"][period["startingPrice"]["level"]]
+        start = pd.Timestamp(period["start"][:10])
+        end = pd.Timestamp(period["end"][:10])  # end is exclusive (next day 00:00)
+        for day in pd.date_range(start, end - pd.Timedelta(days=1)):
+            rows.append({"date": day.strftime("%Y-%m-%d"), "price": price})
+    df = pd.DataFrame(rows, columns=["date", "price"]).drop_duplicates("date")
+    return df[pd.to_datetime(df["date"]).between(first, last)]
+
+
+# ---------- fallback: fixed tariff rules (no usable price API) ----------
+
+def scrape_tariff(cfg):
+    """No request: build one row per open day from the published tariff.
+    base price, optional weekend/holiday price and optional premium periods (higher price)."""
+    rows = []
+    for lo, hi in cfg["open_periods"]:
+        for day in pd.date_range(lo, hi):
+            d = day.strftime("%Y-%m-%d")
+            if cfg.get("weekends_only_until") and d <= cfg["weekends_only_until"] and day.weekday() < 5:
+                continue  # early season: open on weekends only
+            price = cfg["price"]
+            if "weekend_price" in cfg and (day.weekday() >= 5 or d in cfg.get("holidays", [])):
+                price = cfg["weekend_price"]
+            if any(a <= d <= b for a, b in cfg.get("premium_periods", [])):
+                price = cfg["premium_price"]
+            rows.append({"date": d, "price": price})
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
 # one function per platform; the resort config says which one to use
 PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
            "verbier": scrape_verbier, "grimentz": scrape_grimentz,
            "zermatt": scrape_zermatt, "peaksolution": scrape_peaksolution,
-           "deskline": scrape_deskline, "deskline_search": scrape_deskline_search}
+           "deskline": scrape_deskline, "deskline_search": scrape_deskline_search,
+           "arosa": scrape_arosa, "davos": scrape_davos,
+           "jungfrau": scrape_jungfrau, "tariff": scrape_tariff}
 
 
 def main():
