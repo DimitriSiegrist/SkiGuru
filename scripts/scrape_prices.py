@@ -3,6 +3,7 @@
 Run from the repo root:  python scripts/scrape_prices.py
 """
 import json
+import sys
 import time
 from datetime import date
 from pathlib import Path
@@ -73,6 +74,24 @@ RESORTS = {
         "ticket_id": 1501805,     # 1 Tag Skipass Zermatt
         "upgrade": 520187,        # International (+ Breuil-Cervinia/Valtournenche), matches the attributes
         "price_group": "502338",  # Erwachsen (adult)
+    },
+    "crans_montana": {
+        "parser": "peaksolution",
+        "shop": "https://shop.mycma.ch",
+        "region": "sdskicm_winter_jours",
+        "variant_name": "Skipass CMA 1 Day Adult",
+    },
+    "aletsch_arena": {
+        "parser": "peaksolution",
+        "shop": "https://shop.aletscharena.ch",
+        "region": "aletsch-arena",
+        "variant_name": "Skipass Aletsch-Arena 1 Tag Erwachsener",  # not "Adult_lsb" (other tariff, CHF 59)
+    },
+    "belalp": {
+        "parser": "peaksolution",
+        "shop": "https://shop.belalp.ch",
+        "region": "Belalp",
+        "variant_name": "Skipass Blatten - Belalp 1 Tag Erwachsener",
     },
 }
 MONTHS = [(2026, 12), (2027, 1), (2027, 2), (2027, 3), (2027, 4)]
@@ -256,18 +275,59 @@ def scrape_zermatt(cfg):
     return pd.DataFrame(rows, columns=["date", "price"])
 
 
+# ---------- parser 6: Peaksolution (Crans-Montana, Aletsch, Belalp; one POST request per day) ----------
+
+def fetch_peaksolution_day(cfg, day):
+    """Adult online price (CHF) for one day; None if no ticket is sold that day."""
+    url = cfg["shop"] + "/web/proxy/peaksolution/b2c/b2capi/skipass/offers"
+    headers = {"Accept": "application/vnd.alturos.ecommerce.b2capi+json; version=5.0",
+               "Content-Type": "application/json",
+               "Origin": cfg["shop"],
+               "Referer": cfg["shop"] + "/",
+               "User-Agent": USER_AGENT}
+    body = {"date": day, "region": cfg["region"], "duration": "DR1"}  # DR1 = 1 day
+    r = requests.post(url, headers=headers, json=body, timeout=20)
+    if r.status_code != 200:
+        return None
+
+    for offer in r.json():  # empty list = no ticket that day
+        for variant in offer["variants"]:
+            if variant["name"] == cfg["variant_name"]:
+                return variant["price"]["value"]  # online price (originalPrice = counter price)
+    return None
+
+
+def scrape_peaksolution(cfg):
+    """All days of the season for one Peaksolution resort."""
+    first = pd.Timestamp(year=MONTHS[0][0], month=MONTHS[0][1], day=1)
+    last = pd.Timestamp(year=MONTHS[-1][0], month=MONTHS[-1][1], day=1) + pd.offsets.MonthEnd(0)
+
+    rows = []
+    for day in pd.date_range(first, last).strftime("%Y-%m-%d"):
+        price = fetch_peaksolution_day(cfg, day)
+        if price is not None:
+            rows.append({"date": day, "price": price})
+        time.sleep(1)  # politeness: ~150 requests → about 3 minutes
+    return pd.DataFrame(rows, columns=["date", "price"])
+
+
 # one function per platform; the resort config says which one to use
 PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
            "verbier": scrape_verbier, "grimentz": scrape_grimentz,
-           "zermatt": scrape_zermatt}
+           "zermatt": scrape_zermatt, "peaksolution": scrape_peaksolution}
 
 
 def main():
     # display names from the clean resort table (resort_id → resort)
     names = pd.read_csv(ROOT / "data_clean" / "resorts.csv").set_index("resort_id")["resort"]
 
+    # optional: only the resorts named on the command line, e.g.
+    #   python scripts/scrape_prices.py crans_montana
+    selected = sys.argv[1:] or list(RESORTS)
+
     frames = []
-    for rid, cfg in RESORTS.items():
+    for rid in selected:
+        cfg = RESORTS[rid]
         df = PARSERS[cfg["parser"]](cfg)
         if "season_start" in cfg:  # optional: drop days before the area opens
             df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
