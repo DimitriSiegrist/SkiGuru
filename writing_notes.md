@@ -96,3 +96,19 @@
 - New fixed reference ranges = real min/max rounded outward to round numbers: piste km 25–425, lifts 5–70, vertical drop 600–2400 m, top altitude 1800–3900 m; snowmaking 0–1 and ratings 1–5 kept (natural scales)
   - Reason: weights are defined as CHF for the best vs. the worst value → range ≈ worst to best real resort; rounded numbers are easy to explain and leave a little room for resorts added later; set once (not min-max across the list) so B does not change when a resort is added
   - Side effect: lower bounds above 0 → scaled values and B lower for all resorts → CS levels fall (Engelberg lower than in the pilot); differences between resorts become clearer
+
+## Prices for all resorts (task 11.1, 19 Nov 2026)
+- Structure: `scripts/scrape_prices.py` has one parser per ticketing platform and one config per resort (`RESORTS`); `data_clean/prices.csv` now has `resort_id` (merge key) and `source` (which parser)
+  - Reason: many resorts share a platform (Pricenow, Peaksolution, Deskline) → a new resort on a known platform is one config entry, not new code
+- Price = adult 1-day pass, online price without basket discounts (e.g. early-booking or family discounts), season Dec 2026 – Apr 2027, scrape 18–19 Nov 2026
+- 21 resorts from live shop data (one request per day or per month, 1–2 s pause between requests):
+  - Pricenow: Engelberg, Laax, Chäserrugg; own APIs: Adelboden-Lenk, Verbier/4 Vallées, Grimentz-Zinal, Zermatt, Arosa Lenzerheide
+  - Peaksolution: Crans-Montana, Aletsch, Belalp; Deskline: Leukerbad, Savognin, Saas-Fee; Davos webshop: Parsenn, Jakobshorn, Rinerhorn, Madrisa
+  - Jungfrau (3 areas): API gives only a price level per day (regular / high) → mapped to the tariff CHF 79 / 83 (checked in the shop)
+- 4 resorts from fixed tariffs (`source = tariff`, no usable price API): Andermatt-Sedrun (92, premium days 99), Flumserberg (72 Mon–Fri, 76 weekends and holidays), Stoos (58), Hoch-Ybrig (62)
+  - Season dates partly assumed (Flumserberg 12 Dec – 29 Mar, end of Stoos and Hoch-Ybrig 29 Mar), because the shops do not sell tickets yet → check in December
+- Closed days: some APIs also price days when the area is closed (Grimentz, Leukerbad) → only the days bookable in the shop are kept (`season_start`, `open_periods` in the config)
+- Zermatt: price of the International pass (incl. Cervinia), because the attributes include the Italian pistes
+- Shared passes: Parsenn and Jakobshorn are only sold together (same price); the three Jungfrau areas share one regional pass
+- Flat prices despite "dynamic pricing": Crans-Montana (79), Belalp (70), Saas-Fee (86), Grimentz (75) currently show the same online price every day → weekly re-scrapes (11.3) show whether they start to vary
+- Range across all resorts: CHF 30 (Arosa, early December) to CHF 122 (Zermatt International, Christmas)
