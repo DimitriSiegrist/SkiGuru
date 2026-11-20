@@ -15,6 +15,8 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "data_clean" / "prices.csv"
 
+LOG = ROOT / "logs" / "scrape_prices_log.csv"  # one row per resort and run (task 11.2)
+
 USER_AGENT = "SkiGuru student project (UZH, non-commercial)"
 
 # one entry per resort: which parser to use and its parameters (task 11.1)
@@ -635,6 +637,17 @@ def check_prices(df):
         raise ValueError("same date more than once")
 
 
+def write_log(ok, failed):
+    """Append one row per resort to the log file and print a summary line."""
+    now = pd.Timestamp.now(tz="Europe/Zurich").strftime("%Y-%m-%d %H:%M")
+    rows = ([{"run_at": now, "resort_id": rid, "status": "ok", "days": n, "error": ""} for rid, n in ok] +
+            [{"run_at": now, "resort_id": rid, "status": "failed", "days": 0, "error": err} for rid, err in failed])
+    LOG.parent.mkdir(exist_ok=True)  # create the logs/ folder on the first run
+    pd.DataFrame(rows).to_csv(LOG, mode="a", header=not LOG.exists(), index=False)
+    print(f"{len(ok)} ok, {len(failed)} failed" +
+          (": " + ", ".join(r for r, _ in failed) if failed else ""))
+
+
 def main():
     # display names from the clean resort table (resort_id → resort)
     names = pd.read_csv(ROOT / "data_clean" / "resorts.csv").set_index("resort_id")["resort"]
@@ -643,7 +656,7 @@ def main():
     #   python scripts/scrape_prices.py crans_montana
     selected = sys.argv[1:] or list(RESORTS)
 
-    frames, failed = [], []
+    frames, failed, ok  = [], [], []
     for rid in selected:
         cfg = RESORTS[rid]
         try:
@@ -671,11 +684,14 @@ def main():
         df["resort_id"] = rid
         df["resort"] = names[rid]
         df["source"] = cfg["parser"]
+
         frames.append(df)
+        ok.append((rid, len(df)))
         print(f"{rid}: {len(df)} days")
 
     if not frames:  # nothing scraped at all → do not touch prices.csv
         print("No resort scraped successfully, prices.csv unchanged")
+        write_log(ok, failed)
         return
 
     new = pd.concat(frames, ignore_index=True)
@@ -691,8 +707,8 @@ def main():
 
     new.to_csv(OUT, index=False)
     print(f"Saved {len(new)} rows to {OUT}")
-    print(f"{len(frames)} ok, {len(failed)} failed" +
-          (": " + ", ".join(r for r, _ in failed) if failed else ""))
+
+    write_log(ok, failed)
 
 
 if __name__ == "__main__":
