@@ -701,7 +701,7 @@ def main():
     if not frames:  # nothing scraped at all → do not touch prices.csv
         print("No resort scraped successfully, prices.csv unchanged")
         write_log(ok, failed)
-        return
+        return 1
 
     new = pd.concat(frames, ignore_index=True)
     new["scraped_on"] = date.today()
@@ -718,7 +718,8 @@ def main():
     print(f"Saved {len(new)} rows to {OUT}")
 
     write_log(ok, failed)
+    return 1 if failed else 0  # exit code: o = all resorts ok, 1 = at least one failed
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())  # pass the exit code to the terminal / GitHub Action
