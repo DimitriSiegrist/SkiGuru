@@ -1,2 +1,26 @@
-resort,from_station,to_station,fare_full_return,fare_halbtax_return,travel_class,source_url,collected_on
-Engelberg-Titlis,Zürich HB,Engelberg,80.00,40.00,2,https://www.sbb.ch,2026-11-16
+resort,from_station,to_station,fare_full_return,fare_halbtax_return,travel_class,source_url,collected_on,last_mile_min
+Engelberg-Titlis,Zürich HB,Engelberg,80.00,40.00,2,https://www.sbb.ch,2026-11-16,10
+Flims Laax Falera,Zürich HB,"Laax GR, Bergbahnen",118.40,59.20,2,https://www.sbb.ch,2026-11-20,2
+Toggenburg (Chäserrugg),Zürich HB,"Unterwasser, Dorf",77.60,38.80,2,https://www.sbb.ch,2026-11-20,5
+Verbier/4 Vallées,Zürich HB,Le Châble VS,241.60,120.80,2,https://www.sbb.ch,2026-11-20,3
+Zermatt/Matterhorn Ski Paradise,Zürich HB,Zermatt,260.00,130.00,2,https://www.sbb.ch,2026-11-20,10
+Grimentz-Zinal,Zürich HB,"Grimentz, télécabine",236.40,118.20,2,https://www.sbb.ch,2026-11-20,2
+Adelboden-Lenk,Zürich HB,"Adelboden, Oey",164.00,82.00,2,https://www.sbb.ch,2026-11-20,2
+Crans-Montana,Zürich HB,Crans-Montana gare,229.20,114.60,2,https://www.sbb.ch,2026-11-20,5
+Aletsch Arena,Zürich HB,Fiesch,206.00,103.00,2,https://www.sbb.ch,2026-11-20,5
+Belalp,Zürich HB,"Blatten b. Naters,Luftseilbahn",196.80,98.40,2,https://www.sbb.ch,2026-11-20,2
+Leukerbad,Zürich HB,"Leukerbad, Busterminal",217.20,108.60,2,https://www.sbb.ch,2026-11-20,10
+Savognin,Zürich HB,"Savognin, Posta",133.20,66.60,2,https://www.sbb.ch,2026-11-20,5
+Flumserberg,Zürich HB,Unterterzen,58.00,29.00,2,https://www.sbb.ch,2026-11-20,2
+Hoch-Ybrig,Zürich HB,"Hoch-Ybrig, Talst. Weglosen",60.80,30.40,2,https://www.sbb.ch,2026-11-20,5
+Stoos,Zürich HB,Stoos SZ,86.40,43.20,2,https://www.sbb.ch,2026-11-20,5
+Saas-Fee,Zürich HB,"Saas-Fee, Busterminal",220.80,110.40,2,https://www.sbb.ch,2026-11-20,10
+Arosa Lenzerheide,Zürich HB,"Lenzerheide/Lai, Rothornbahn",106.00,53.00,2,https://www.sbb.ch,2026-11-20,2
+Andermatt-Sedrun,Zürich HB,Andermatt,97.20,48.60,2,https://www.sbb.ch,2026-11-20,5
+Davos Klosters – Parsenn,Zürich HB,Davos Dorf,118.00,59.00,2,https://www.sbb.ch,2026-11-20,3
+Davos Klosters – Jakobshorn,Zürich HB,Davos Platz,118.00,59.00,2,https://www.sbb.ch,2026-11-20,5
+Davos Klosters – Rinerhorn,Zürich HB,Davos Glaris,122.00,61.00,2,https://www.sbb.ch,2026-11-20,5
+Davos Klosters – Madrisa,Zürich HB,Klosters Dorf,112.00,56.00,2,https://www.sbb.ch,2026-11-20,3
+Jungfrau – Kleine Scheidegg/Männlichen,Zürich HB,Grindelwald Terminal,168.00,84.00,2,https://www.sbb.ch,2026-11-20,2
+Jungfrau – First,Zürich HB,Grindelwald,169.60,84.80,2,https://www.sbb.ch,2026-11-20,10
+Jungfrau – Schilthorn/Mürren,Zürich HB,Mürren BLM,185.20,92.60,2,https://www.sbb.ch,2026-11-20,10

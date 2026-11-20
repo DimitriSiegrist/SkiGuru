@@ -54,3 +54,61 @@
 - Check: hand calculation = code (15 Jan, train Halbtax, v = 20: B 220.91 − P 58 − K 40 − v·T 77.33 = CS 45.58)
 - Season result (train, Halbtax): CS CHF 26–56; lowest around Christmas/New Year (prices CHF 68–69, little snow), weekends visible as dips (CS mirrors the price)
 - Limitation: late April has the highest CS (cheapest price, full snow score) → spring snow quality and lift closures not modelled
+
+## Resort list and attributes (tasks 9 and 10.1, 16 Nov 2026)
+- Resort list: 20 resorts (column `selected` in `docs/resort_candidates.csv`) = all 13 scrapable + 7 with tariff fallback (Flumserberg, Hoch-Ybrig, Stoos, Jungfrau, Davos Klosters, Arosa Lenzerheide, Andermatt-Sedrun-Disentis); more only if time at the end
+- Split into 25 rows in `docs/resort_attributes.csv` (one row per ski area as listed on Skiresort.info):
+  - Verbier + Nendaz merged into 'Verbier/4 Vallées' (one area on Skiresort.info); Nendaz replaced by Saas-Fee
+  - Zermatt incl. Cervinia (price must be the international pass → check in task 11)
+  - Davos Klosters split into Parsenn, Jakobshorn, Rinerhorn, Madrisa (Pischa dropped: 0 km of pistes, freeride only)
+  - Jungfrau split into Kleine Scheidegg/Männlichen, First, Schilthorn/Mürren
+  - Andermatt = Andermatt/Oberalp/Sedrun (without Gemsstock and Disentis); Toggenburg = Chäserrugg (Pricenow product)
+  - Split areas need their own price (Davos and Jungfrau tariffs per area, task 11)
+- Attributes and default weights (CHF): piste km 30, lifts 5, vertical drop 15, top altitude 10, snowmaking share 5, difficulty mix 10, snow depth 25, new snow 10, family / freeride / parks 5 each
+  - Difficulty mix = share of km at the user's level (beginner / intermediate / expert → blue / red / black km)
+- Source: Skiresort.info for all attributes (same measure for every resort); coordinates = valley stations from Google Maps (Crans-Montana and Lenzerheide corrected from mountain/middle station to valley station)
+- Family / freeride / parks: Skiresort.info test ratings (1–5 stars), scaled (stars − 1) / 4, instead of 0/1 → finer and one rule for all resorts; Chäserrugg has no test report → neutral 0.5
+- Ski routes (e.g. Laax 40 km) not counted in piste km (not groomed; covered by the freeride rating)
+- Engelberg lifts 17 → 18 (Skiresort.info, 16 Nov)
+- Spot check (Laax, Stoos, Parsenn, Verbier/4 Vallées): all values match Skiresort.info
+- Reference ranges for scaling: set once from the real min/max of the resorts (task 10.3), not min-max across the list → B must not depend on which resorts are in the list
+
+## Resort attribute cleaning (task 10.2, 17 Nov 2026)
+- Input: `docs/resort_attributes.csv` (hand-collected, versioned in the repo) instead of `data_raw/` → `data_raw/` is not in the repo, so a script reading from it could not be reproduced
+- Output: `data_clean/resorts.csv` = the one attribute table that the app and all scripts read; written only by `scripts/clean_resorts.py`
+- Types: resort names stripped of leading/trailing spaces (a trailing space would make merges fail silently); `collected_on` as date; star ratings as integers that allow missing values (`Int64`)
+- Missing values: only Chäserrugg (Toggenburg) has none of the three ratings (no Skiresort.info test report) → kept as missing (`<NA>`) in `resorts.csv`, not filled with 3 stars
+  - Reason: the clean table should only contain what the source says; a filled-in 3 would look like a real Skiresort.info rating
+  - The "neutral" assumption sits in one place, the model: `scale()` in `src/finder.py` turns a missing value into 0.5 (= same as 3 stars) → Chäserrugg is neither rewarded nor penalised for family / freeride / parks
+- Merge key: new column `resort_id`, generated from the name (lowercase, ä/ö/ü → ae/oe/ue, accents removed, other characters → `_`), e.g. 'Davos Klosters – Parsenn' → `davos_klosters_parsenn`; `resort` stays as the display name
+  - Reason: names contain en dashes, `/`, accents and umlauts → easy to mistype in other files (prices, fares, parking), and a mistyped key drops the resort from a merge without an error
+  - Script checks that all 25 ids are unique
+
+## Plausibility checks (task 10.3, 17 Nov 2026)
+- `check()` in `scripts/clean_resorts.py` runs before saving and stops the script if a value cannot be right → a wrong value never reaches `data_clean/resorts.csv` or the app; checks re-run automatically whenever the data changes
+  - vertical drop = top − base altitude (exact)
+  - blue + red + black km = piste km (tolerance 0.5 km for decimal rounding)
+  - base altitude < top altitude; snowmaking share 0–1; ratings 1–5 stars (missing skipped)
+  - coordinates inside a rough box around Switzerland (lat 45.8–47.9, lon 5.9–10.5) → catches swapped lat/lon and typos
+- Result: all 25 resorts pass all checks
+- Min/max of the 25 resorts: piste km 26–412 (Madrisa – Verbier/4 Vallées), lifts 7–65 (Rinerhorn – Verbier), vertical drop 635–2337 m (Stoos – Zermatt), top altitude 1831–3899 m (Hoch-Ybrig – Zermatt), snowmaking 0.12–0.95, ratings 1–5 stars (freeride 3–5)
+- Pilot ranges were too narrow: piste km 0–300 (Verbier and Zermatt both capped at 1 → the two largest areas looked equal), vertical drop 0–2200 (Zermatt capped), top altitude 1500–3500 (Zermatt and Saas-Fee capped); lower bounds of 0 far below every real resort
+- New fixed reference ranges = real min/max rounded outward to round numbers: piste km 25–425, lifts 5–70, vertical drop 600–2400 m, top altitude 1800–3900 m; snowmaking 0–1 and ratings 1–5 kept (natural scales)
+  - Reason: weights are defined as CHF for the best vs. the worst value → range ≈ worst to best real resort; rounded numbers are easy to explain and leave a little room for resorts added later; set once (not min-max across the list) so B does not change when a resort is added
+  - Side effect: lower bounds above 0 → scaled values and B lower for all resorts → CS levels fall (Engelberg lower than in the pilot); differences between resorts become clearer
+
+## Prices for all resorts (task 11.1, 19 Nov 2026)
+- Structure: `scripts/scrape_prices.py` has one parser per ticketing platform and one config per resort (`RESORTS`); `data_clean/prices.csv` now has `resort_id` (merge key) and `source` (which parser)
+  - Reason: many resorts share a platform (Pricenow, Peaksolution, Deskline) → a new resort on a known platform is one config entry, not new code
+- Price = adult 1-day pass, online price without basket discounts (e.g. early-booking or family discounts), season Dec 2026 – Apr 2027, scrape 18–19 Nov 2026
+- 21 resorts from live shop data (one request per day or per month, 1–2 s pause between requests):
+  - Pricenow: Engelberg, Laax, Chäserrugg; own APIs: Adelboden-Lenk, Verbier/4 Vallées, Grimentz-Zinal, Zermatt, Arosa Lenzerheide
+  - Peaksolution: Crans-Montana, Aletsch, Belalp; Deskline: Leukerbad, Savognin, Saas-Fee; Davos webshop: Parsenn, Jakobshorn, Rinerhorn, Madrisa
+  - Jungfrau (3 areas): API gives only a price level per day (regular / high) → mapped to the tariff CHF 79 / 83 (checked in the shop)
+- 4 resorts from fixed tariffs (`source = tariff`, no usable price API): Andermatt-Sedrun (92, premium days 99), Flumserberg (72 Mon–Fri, 76 weekends and holidays), Stoos (58), Hoch-Ybrig (62)
+  - Season dates partly assumed (Flumserberg 12 Dec – 29 Mar, end of Stoos and Hoch-Ybrig 29 Mar), because the shops do not sell tickets yet → check in December
+- Closed days: some APIs also price days when the area is closed (Grimentz, Leukerbad) → only the days bookable in the shop are kept (`season_start`, `open_periods` in the config)
+- Zermatt: price of the International pass (incl. Cervinia), because the attributes include the Italian pistes
+- Shared passes: Parsenn and Jakobshorn are only sold together (same price); the three Jungfrau areas share one regional pass
+- Flat prices despite "dynamic pricing": Crans-Montana (79), Belalp (70), Saas-Fee (86), Grimentz (75) currently show the same online price every day → weekly re-scrapes (11.3) show whether they start to vary
+- Range across all resorts: CHF 30 (Arosa, early December) to CHF 122 (Zermatt International, Christmas)
