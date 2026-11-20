@@ -379,17 +379,19 @@ st.caption(f"Fresh snowfall in cm. {zeitraum_text}.")
 
 with st.expander("How is new snow per day calculated?"):
     st.markdown(
-        "The station only measures one thing: the total depth of the snowpack. "
-        "New snow is not simply the change in that number, because the pack settles "
-        "and melts while fresh snow lands on top of it. Twenty centimetres of new snow "
-        "can lift the measured depth by only fifteen, and on a warm spring day the depth "
-        "can even fall while it is snowing.\n\n"
+        "The station measures the total depth of the snowpack, but new snow is not "
+        "simply the change in that number, because the pack settles and melts while "
+        "fresh snow lands on top of it. Twenty centimetres of new snow can lift the "
+        "measured depth by only fifteen, and on a warm spring day the depth can even "
+        "fall while it is snowing.\n\n"
         "SLF's **SNOWPACK** model resolves this. It simulates the snowpack layer by layer "
         "from the station's own measurements of air temperature, humidity, wind and "
         "radiation, calculates how far each layer sank or melted, and attributes whatever "
         "is left over to fresh snowfall.\n\n"
-        "The figure shown here is therefore modelled rather than measured. It is the same "
-        "model that underpins the national avalanche bulletin."
+        "The figure shown here is therefore modelled based on the station's measured "
+        "snow depth and weather data.\n\n"
+        "Source: [Snow cover modelling, SLF]"
+        "(https://www.slf.ch/en/snow/snowpack/snow-cover-modelling/)"
     )
 
 balken = reihe.rename(columns={"datum": "Date", "HN_1D": "New snow (cm)"})
