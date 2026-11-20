@@ -2,7 +2,7 @@
 (fallback until Dimi's snow forecast exists: historical values for each calendar day).
 
 Writes data_clean/resort_stations.csv and data_clean/snow_expected.csv
-Run from the repo root:  python scripts/snow_resort.py
+Run from the repo root:  python scripts/snow_resorts.py
 """
 from pathlib import Path
 
@@ -11,7 +11,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 RESORTS = ROOT / "data_clean" / "resorts.csv"
-STATIONS = ROOT / "data_clean" / "stationen.csv"
+STATIONS = ROOT / "data_clean" / "stations.csv"
 SNOW = ROOT / "data_clean" / "daily_snow.parquet"
 OUT_STATIONS = ROOT / "data_clean" / "resort_stations.csv"
 OUT_SNOW = ROOT / "data_clean" / "snow_expected.csv"
@@ -31,13 +31,13 @@ def haversine_km(lat1, lon1, lat2, lon2):
 def nearest_station(resort, stations):
     d = haversine_km(resort["lat"], resort["lon"], stations["lat"], stations["lon"])
     best = stations.assign(dist_km=d).sort_values("dist_km").iloc[0]
-    return best["station_code"], best["name"], best["hoehe"], round(best["dist_km"], 1)
+    return best["station_code"], best["name"], best["elevation"], round(best["dist_km"], 1)
 
 
 def climatology(snow_station):
     """Per calendar day: median snow depth and mean new snow over 3 days."""
     s = snow_station.copy()
-    s["day"] = s["datum"].dt.strftime("%m-%d")
+    s["day"] = s["date"].dt.strftime("%m-%d")
     s["HN_clean"] = s["HN_1D"].where(s["HN_1D"] <= HN_MAX_DAY)
 
     hs = s.groupby("day")["HS"].median()
@@ -50,10 +50,10 @@ def climatology(snow_station):
 def main():
     resorts = pd.read_csv(RESORTS)
     stations = pd.read_csv(STATIONS)
-    stations = stations[stations["typ"] == "schnee"]
+    stations = stations[stations["type"] == "snow"]
     snow = pd.read_parquet(SNOW)
     snow["station_code"] = snow["station_code"].astype(str)
-    snow["datum"] = pd.to_datetime(snow["datum"])
+    snow["date"] = pd.to_datetime(snow["date"])
 
     match_rows, snow_rows = [], []
     for _, r in resorts.iterrows():

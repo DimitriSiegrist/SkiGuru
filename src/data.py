@@ -1,4 +1,4 @@
-"""Loading the snow data: Parquet base plus the last few days from the SLF API."""
+"""Loading the data for the app: snow, temperature, stations and avalanche bulletin."""
 
 from pathlib import Path
 
@@ -6,94 +6,94 @@ import pandas as pd
 import requests
 import streamlit as st
 
-BASIS = Path(__file__).resolve().parent.parent
-PARQUET = BASIS / "data_clean" / "daily_snow.parquet"
-TEMPERATUR = BASIS / "data_clean" / "daily_temp.parquet"
-STATIONEN = BASIS / "data_clean" / "stationen.csv"
+BASE = Path(__file__).resolve().parent.parent
+SNOW = BASE / "data_clean" / "daily_snow.parquet"
+TEMPERATURE = BASE / "data_clean" / "daily_temp.parquet"
+STATIONS = BASE / "data_clean" / "stations.csv"
 API = "https://measurement-api.slf.ch/public/api/imis/daily-snow"
 BULLETIN = "https://aws.slf.ch/api/bulletin/caaml/en/geojson"
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def _hole_api(tage=7):
+def _fetch_api(days=7):
     """Fetches the last few days from the SLF API. Only 1, 3 or 7 are allowed."""
-    antwort = requests.get(API, params={"period_in_days": tage}, timeout=20)
-    antwort.raise_for_status()
+    response = requests.get(API, params={"period_in_days": days}, timeout=20)
+    response.raise_for_status()
 
-    neu = pd.DataFrame(antwort.json())
-    if neu.empty:
+    new = pd.DataFrame(response.json())
+    if new.empty:
         return None
 
-    neu["datum"] = pd.to_datetime(neu["measure_date"]).dt.normalize()
-    neu["hyear"] = neu["datum"].dt.year + (neu["datum"].dt.month >= 10).astype(int)
-    neu.loc[neu["HS"] < 0, "HS"] = 0.0
-    return neu[["station_code", "datum", "hyear", "HS", "HN_1D"]]
+    new["date"] = pd.to_datetime(new["measure_date"]).dt.normalize()
+    new["hyear"] = new["date"].dt.year + (new["date"].dt.month >= 10).astype(int)
+    new.loc[new["HS"] < 0, "HS"] = 0.0
+    return new[["station_code", "date", "hyear", "HS", "HN_1D"]]
 
 
 @st.cache_data(ttl=1800, show_spinner="Loading snow data ...")
-def lade_schnee():
+def load_snow():
     """Returns (data, live). live is False if the API could not be reached."""
-    daten = pd.read_parquet(PARQUET)
-    daten["station_code"] = daten["station_code"].astype(str)
+    data = pd.read_parquet(SNOW)
+    data["station_code"] = data["station_code"].astype(str)
 
     try:
-        neu = _hole_api()
+        new = _fetch_api()
     except Exception:
-        neu = None
+        new = None
 
-    if neu is None:
-        return daten.sort_values(["station_code", "datum"]).reset_index(drop=True), False
+    if new is None:
+        return data.sort_values(["station_code", "date"]).reset_index(drop=True), False
 
-    daten = pd.concat([daten, neu], ignore_index=True)
-    daten = (
-        daten.drop_duplicates(["station_code", "datum"], keep="last")
-        .sort_values(["station_code", "datum"])
+    data = pd.concat([data, new], ignore_index=True)
+    data = (
+        data.drop_duplicates(["station_code", "date"], keep="last")
+        .sort_values(["station_code", "date"])
         .reset_index(drop=True)
     )
-    return daten, True
+    return data, True
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def lade_temperatur():
+def load_temperature():
     """Daily air and snow surface temperatures per station."""
-    temp = pd.read_parquet(TEMPERATUR)
+    temp = pd.read_parquet(TEMPERATURE)
     temp["station_code"] = temp["station_code"].astype(str)
     return temp
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def lade_bulletin():
+def load_bulletin():
     """Current SLF avalanche bulletin as GeoJSON. None if unavailable."""
     try:
-        antwort = requests.get(BULLETIN, timeout=15)
-        antwort.raise_for_status()
-        inhalt = antwort.json()
-        if inhalt.get("features"):
-            return inhalt
+        response = requests.get(BULLETIN, timeout=15)
+        response.raise_for_status()
+        content = response.json()
+        if content.get("features"):
+            return content
     except Exception:
         pass
     return None
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def lade_stationen(tage_aktiv=7):
+def load_stations(active_days=7):
     """Snow stations with coordinates and current snow depth."""
-    daten, _ = lade_schnee()
+    data, _ = load_snow()
 
-    stationen = pd.read_csv(STATIONEN)
-    stationen = stationen[stationen["typ"] == "schnee"].copy()
+    stations = pd.read_csv(STATIONS)
+    stations = stations[stations["type"] == "snow"].copy()
 
-    letzte = daten.groupby("station_code")["datum"].max()
-    aktiv = letzte[letzte >= letzte.max() - pd.Timedelta(days=tage_aktiv)].index
-    stationen = stationen[stationen["station_code"].isin(aktiv)]
+    last_seen = data.groupby("station_code")["date"].max()
+    active = last_seen[last_seen >= last_seen.max() - pd.Timedelta(days=active_days)].index
+    stations = stations[stations["station_code"].isin(active)]
 
-    neuste = (
-        daten[daten["station_code"].isin(stationen["station_code"])]
-        .sort_values("datum")
+    latest = (
+        data[data["station_code"].isin(stations["station_code"])]
+        .sort_values("date")
         .groupby("station_code")
         .last()
         .reset_index()[["station_code", "HS"]]
     )
-    stationen = stationen.merge(neuste, on="station_code", how="left")
-    stationen["HS"] = stationen["HS"].fillna(0).round(0)
-    return stationen
+    stations = stations.merge(latest, on="station_code", how="left")
+    stations["HS"] = stations["HS"].fillna(0).round(0)
+    return stations
