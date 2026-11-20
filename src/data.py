@@ -9,6 +9,7 @@ import streamlit as st
 BASE = Path(__file__).resolve().parent.parent
 SNOW = BASE / "data_clean" / "daily_snow.parquet"
 TEMPERATURE = BASE / "data_clean" / "daily_temp.parquet"
+TEMPERATURE_RECENT = BASE / "data_clean" / "daily_temp_recent.parquet"
 STATIONS = BASE / "data_clean" / "stations.csv"
 API = "https://measurement-api.slf.ch/public/api/imis/daily-snow"
 BULLETIN = "https://aws.slf.ch/api/bulletin/caaml/en/geojson"
@@ -55,9 +56,23 @@ def load_snow():
 
 @st.cache_data(ttl=1800, show_spinner=False)
 def load_temperature():
-    """Daily air and snow surface temperatures per station."""
+    """Daily air and snow surface temperatures per station.
+
+    The archive holds the long history. The recent file holds the days added
+    since by scripts/update_temperature.py and wins where both have a day.
+    """
     temp = pd.read_parquet(TEMPERATURE)
     temp["station_code"] = temp["station_code"].astype(str)
+
+    if TEMPERATURE_RECENT.exists():
+        recent = pd.read_parquet(TEMPERATURE_RECENT)
+        recent["station_code"] = recent["station_code"].astype(str)
+        temp = pd.concat([temp, recent], ignore_index=True)
+        temp = (
+            temp.drop_duplicates(["station_code", "date"], keep="last")
+            .sort_values(["station_code", "date"])
+            .reset_index(drop=True)
+        )
     return temp
 
 
