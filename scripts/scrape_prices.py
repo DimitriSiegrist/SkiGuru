@@ -618,6 +618,23 @@ PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
            "jungfrau": scrape_jungfrau, "tariff": scrape_tariff}
 
 
+# plausibility limits for one resort's result (task 11.2)
+MIN_DAYS = 30                 # shortest real season so far: Rinerhorn, 97 days
+PRICE_RANGE = (20, 200)       # CHF; real range so far: 30–122
+
+
+def check_prices(df):
+    """Raise ValueError if the scraped prices of one resort look wrong."""
+    if len(df) < MIN_DAYS:
+        raise ValueError(f"only {len(df)} days (minimum {MIN_DAYS})")
+    lo, hi = PRICE_RANGE
+    bad = df[(df["price"] < lo) | (df["price"] > hi)]
+    if len(bad):
+        raise ValueError(f"{len(bad)} prices outside CHF {lo}–{hi}, e.g. {bad['price'].iloc[0]}")
+    if df["date"].astype(str).duplicated().any():
+        raise ValueError("same date more than once")
+
+
 def main():
     # display names from the clean resort table (resort_id → resort)
     names = pd.read_csv(ROOT / "data_clean" / "resorts.csv").set_index("resort_id")["resort"]
@@ -643,6 +660,14 @@ def main():
             for lo, hi in cfg["open_periods"]:
                 is_open |= d.between(lo, hi)
             df = df[is_open]
+
+        try:
+            check_prices(df)
+        except ValueError as e:  # implausible result → treat like an error, keep the others
+            failed.append((rid, str(e)))
+            print(f"{rid}: FAILED ({e})")
+            continue
+
         df["resort_id"] = rid
         df["resort"] = names[rid]
         df["source"] = cfg["parser"]
