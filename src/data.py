@@ -6,12 +6,15 @@ import pandas as pd
 import requests
 import streamlit as st
 
+from src.daily import to_daily
+
 BASE = Path(__file__).resolve().parent.parent
 SNOW = BASE / "data_clean" / "daily_snow.parquet"
 TEMPERATURE = BASE / "data_clean" / "daily_temp.parquet"
 TEMPERATURE_RECENT = BASE / "data_clean" / "daily_temp_recent.parquet"
 STATIONS = BASE / "data_clean" / "stations.csv"
 API = "https://measurement-api.slf.ch/public/api/imis/daily-snow"
+MEASUREMENTS = "https://measurement-api.slf.ch/public/api/imis/station/{code}/measurements"
 BULLETIN = "https://aws.slf.ch/api/bulletin/caaml/en/geojson"
 
 
@@ -74,6 +77,25 @@ def load_temperature():
             .reset_index(drop=True)
         )
     return temp
+
+
+@st.cache_data(ttl=1800, show_spinner=False)
+def load_temperature_live(code):
+    """The last complete days of one station, straight from the SLF API.
+
+    Fills the gap between two runs of the scheduled update. None if unavailable.
+    """
+    try:
+        response = requests.get(
+            MEASUREMENTS.format(code=code), params={"period_in_days": 7}, timeout=15
+        )
+        response.raise_for_status()
+        rows = response.json()
+        if not rows:
+            return None
+        return to_daily(pd.DataFrame(rows), code)
+    except Exception:
+        return None
 
 
 @st.cache_data(ttl=1800, show_spinner=False)
