@@ -626,10 +626,15 @@ def main():
     #   python scripts/scrape_prices.py crans_montana
     selected = sys.argv[1:] or list(RESORTS)
 
-    frames = []
+    frames, failed = [], []
     for rid in selected:
         cfg = RESORTS[rid]
-        df = PARSERS[cfg["parser"]](cfg)
+        try:
+            df = PARSERS[cfg["parser"]](cfg)
+        except Exception as e:  # any error in one shop → skip this resort, keep the others
+            failed.append((rid, f"{type(e).__name__}: {e}"))
+            print(f"{rid}: FAILED ({type(e).__name__}: {e})")
+            continue
         if "season_start" in cfg:  # optional: drop days before the area opens
             df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
         if "open_periods" in cfg:  # optional: keep only days inside the open periods
@@ -644,6 +649,10 @@ def main():
         frames.append(df)
         print(f"{rid}: {len(df)} days")
 
+    if not frames:  # nothing scraped at all → do not touch prices.csv
+        print("No resort scraped successfully, prices.csv unchanged")
+        return
+
     new = pd.concat(frames, ignore_index=True)
     new["scraped_on"] = date.today()
     new["days_ahead"] = (pd.to_datetime(new["date"]) - pd.to_datetime(new["scraped_on"])).dt.days
@@ -657,6 +666,8 @@ def main():
 
     new.to_csv(OUT, index=False)
     print(f"Saved {len(new)} rows to {OUT}")
+    print(f"{len(frames)} ok, {len(failed)} failed" +
+          (": " + ", ".join(r for r, _ in failed) if failed else ""))
 
 
 if __name__ == "__main__":
