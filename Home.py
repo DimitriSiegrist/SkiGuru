@@ -14,11 +14,11 @@ st.caption("Three tools for your next day on snow")
 
 st.write("")
 
-links, rechts = st.columns([2, 1], gap="medium")
+left, right = st.columns([2, 1], gap="medium")
 
-with links:
+with left:
     st.image(str(ASSETS / "ski_touring.png"), width=96)
-    with st.container(border=True, height=270, key="gruppe_tour"):
+    with st.container(border=True, height=270, key="group_touring"):
         st.markdown("### Ski touring")
         st.caption("Is the tour on, and how long will the snow hold?")
 
@@ -38,9 +38,9 @@ with links:
             )
             st.page_link("pages/2_Snow_Melt.py", label="Open →")
 
-with rechts:
+with right:
     st.image(str(ASSETS / "ski_downhill.png"), width=96)
-    with st.container(border=True, height=270, key="gruppe_piste"):
+    with st.container(border=True, height=270, key="group_piste"):
         st.markdown("### On piste")
         st.caption("Which resort fits your day?")
 

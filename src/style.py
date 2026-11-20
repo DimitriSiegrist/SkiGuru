@@ -7,7 +7,7 @@ import streamlit as st
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
 ICON = ASSETS / "icon.png"
 
-STIL = """
+STYLE = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
 
@@ -21,7 +21,7 @@ h1 { font-size: 3.4rem !important; line-height: 1.05 !important; }
 
 #MainMenu, footer { visibility: hidden; }
 
-.st-key-gruppe_tour, .st-key-gruppe_piste {
+.st-key-group_touring, .st-key-group_piste {
     border: 1px solid #111111 !important;
     border-radius: 0 !important;
 }
@@ -41,12 +41,12 @@ hr { border-color: #ececec !important; }
 """
 
 
-def setup_page(titel):
+def setup_page(title):
     """Sets page title, icon and style. Must be called first."""
     st.set_page_config(
-        page_title=titel,
+        page_title=title,
         page_icon=str(ICON),
         layout="wide",
         initial_sidebar_state="collapsed",
     )
-    st.markdown(STIL, unsafe_allow_html=True)
+    st.markdown(STYLE, unsafe_allow_html=True)
