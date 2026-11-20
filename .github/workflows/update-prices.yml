@@ -35,5 +35,6 @@ jobs:
             echo "Nothing changed"
           else
             git commit -m "Update ski pass prices"
+            git pull --rebase   # main may have changed during the ~45 min run (e.g. a merge)
             git push
           fi

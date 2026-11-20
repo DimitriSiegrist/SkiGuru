@@ -68,6 +68,8 @@ RESORTS = {
         "product": "ANNIVIERS",  # 1 jour Val d'Anniviers
         "consumer": "ADULT",
         "season_start": "2026-12-18",  # API also prices closed days → drop days before opening
+        # if the shop fails (e.g. on GitHub's servers): flat online price CHF 75, same season as in the shop
+        "fallback": {"parser": "tariff", "price": 75, "open_periods": [("2026-12-18", "2027-04-11")]},
         "jwt": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJjbGllbnRJZCI6MzY5LCJhY3Rpb25zIjp7InNpbXVsYXRpb25SZXNvbHZlciI6eyJjb250cm9sbGVyIjoiUmVkcGlsbEJ1bmRsZTpBcGlcXFYyXFxTaW11bGF0aW9uOmdldFNpbXVsYXRpb25XaXRoUmVzb2x2ZXIiLCJyZXNvdXJjZSI6IlNpbXVsYXRpb24ifSwib2ZmZXJzU2VhcmNoIjp7ImNvbnRyb2xsZXIiOiJSZWRwaWxsQnVuZGxlOkFwaVxcVjJcXE9mZmVyczpzZWFyY2giLCJyZXNvdXJjZSI6Ik9mZmVycyJ9LCJwcm9kdWN0cyI6eyJjb250cm9sbGVyIjoiUmVkcGlsbEJ1bmRsZTpBcGlcXFYyXFxQcm9kdWN0OmNnZXQiLCJyZXNvdXJjZSI6IlByb2R1Y3QifX19.eeVxzUXDrgvhFDKrHfe7yT8J9bbjVbky0wKl5t0Rmy4",
     },
     "zermatt_matterhorn_ski_paradise": {
@@ -639,15 +641,42 @@ def check_prices(df):
         raise ValueError("same date more than once")
 
 
-def write_log(ok, failed):
+def write_log(ok, failed, fallback=()):
     """Append one row per resort to the log file and print a summary line."""
     now = pd.Timestamp.now(tz="Europe/Zurich").strftime("%Y-%m-%d %H:%M")
     rows = ([{"run_at": now, "resort_id": rid, "status": "ok", "days": n, "error": ""} for rid, n in ok] +
+            [{"run_at": now, "resort_id": rid, "status": "fallback", "days": n, "error": err}
+             for rid, n, err in fallback] +
             [{"run_at": now, "resort_id": rid, "status": "failed", "days": 0, "error": err} for rid, err in failed])
     LOG.parent.mkdir(exist_ok=True)  # create the logs/ folder on the first run
     pd.DataFrame(rows).to_csv(LOG, mode="a", header=not LOG.exists(), index=False)
-    print(f"{len(ok)} ok, {len(failed)} failed" +
-          (": " + ", ".join(r for r, _ in failed) if failed else ""))
+    print(f"{len(ok)} ok, {len(fallback)} fallback, {len(failed)} failed" +
+          (" | fallback: " + ", ".join(r for r, _, _ in fallback) if fallback else "") +
+          (" | failed: " + ", ".join(r for r, _ in failed) if failed else ""))
+
+
+def scrape_resort(rid, cfg):
+    """Run the parser of one resort (with retries), apply the season filters and the plausibility check.
+    Returns the prices; raises an error if the resort cannot be scraped."""
+    for attempt in range(RETRIES + 1):
+        try:
+            df = PARSERS[cfg["parser"]](cfg)
+            break  # success → leave the retry loop
+        except Exception as e:  # any error in one shop → wait and try again
+            if attempt == RETRIES:
+                raise
+            print(f"{rid}: error ({type(e).__name__}: {e}), retrying in {RETRY_WAIT} s")
+            time.sleep(RETRY_WAIT)
+    if "season_start" in cfg:  # optional: drop days before the area opens
+        df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
+    if "open_periods" in cfg:  # optional: keep only days inside the open periods
+        d = pd.to_datetime(df["date"])
+        is_open = pd.Series(False, index=df.index)
+        for lo, hi in cfg["open_periods"]:
+            is_open |= d.between(lo, hi)
+        df = df[is_open]
+    check_prices(df)  # raises ValueError if the result is implausible (no retry: same result again)
+    return df
 
 
 def main():
@@ -658,49 +687,33 @@ def main():
     #   python scripts/scrape_prices.py crans_montana
     selected = sys.argv[1:] or list(RESORTS)
 
-    frames, failed, ok  = [], [], []
+    frames, failed, ok, fallback = [], [], [], []
     for rid in selected:
         cfg = RESORTS[rid]
-        for attempt in range(RETRIES + 1):
-            try:
-                df = PARSERS[cfg["parser"]](cfg)
-                break  # success → leave the retry loop
-            except Exception as e:  # any error in one shop → wait and try again
-                error = f"{type(e).__name__}: {e}"
-                if attempt < RETRIES:
-                    print(f"{rid}: error ({error}), retrying in {RETRY_WAIT} s")
-                    time.sleep(RETRY_WAIT)
-        else:  # all attempts failed → skip this resort, keep the others
-            failed.append((rid, error))
-            print(f"{rid}: FAILED ({error})")
-            continue
-        if "season_start" in cfg:  # optional: drop days before the area opens
-            df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
-        if "open_periods" in cfg:  # optional: keep only days inside the open periods
-            d = pd.to_datetime(df["date"])
-            is_open = pd.Series(False, index=df.index)
-            for lo, hi in cfg["open_periods"]:
-                is_open |= d.between(lo, hi)
-            df = df[is_open]
-
         try:
-            check_prices(df)
-        except ValueError as e:  # implausible result → treat like an error, keep the others
-            failed.append((rid, str(e)))
-            print(f"{rid}: FAILED ({e})")
-            continue
+            df = scrape_resort(rid, cfg)
+            source = cfg["parser"]
+            ok.append((rid, len(df)))
+            print(f"{rid}: {len(df)} days")
+        except Exception as e:
+            error = f"{type(e).__name__}: {e}"
+            if "fallback" not in cfg:  # no fallback → skip this resort, keep the others
+                failed.append((rid, error))
+                print(f"{rid}: FAILED ({error})")
+                continue
+            df = scrape_resort(rid, cfg["fallback"])  # e.g. fixed tariff instead of the shop
+            source = cfg["fallback"]["parser"]
+            fallback.append((rid, len(df), error))
+            print(f"{rid}: scraper failed ({error}) → fallback {source}, {len(df)} days")
 
         df["resort_id"] = rid
         df["resort"] = names[rid]
-        df["source"] = cfg["parser"]
-
+        df["source"] = source
         frames.append(df)
-        ok.append((rid, len(df)))
-        print(f"{rid}: {len(df)} days")
 
     if not frames:  # nothing scraped at all → do not touch prices.csv
         print("No resort scraped successfully, prices.csv unchanged")
-        write_log(ok, failed)
+        write_log(ok, failed, fallback)
         return 1
 
     new = pd.concat(frames, ignore_index=True)
@@ -717,7 +730,7 @@ def main():
     new.to_csv(OUT, index=False)
     print(f"Saved {len(new)} rows to {OUT}")
 
-    write_log(ok, failed)
+    write_log(ok, failed, fallback)
     return 1 if failed else 0  # exit code: o = all resorts ok, 1 = at least one failed
 
 
