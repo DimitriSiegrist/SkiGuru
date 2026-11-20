@@ -5,37 +5,37 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-BASIS = Path(__file__).resolve().parent.parent
+BASE = Path(__file__).resolve().parent.parent
 URL = "https://measurement-data.slf.ch/imis/data/daily_snow_values/daily_snow.csv"
-ROH = BASIS / "data_raw" / "daily_snow.csv"
-ZIEL = BASIS / "data_clean" / "daily_snow.parquet"
+RAW = BASE / "data_raw" / "daily_snow.csv"
+TARGET = BASE / "data_clean" / "daily_snow.parquet"
 
-ROH.parent.mkdir(parents=True, exist_ok=True)
-ZIEL.parent.mkdir(parents=True, exist_ok=True)
+RAW.parent.mkdir(parents=True, exist_ok=True)
+TARGET.parent.mkdir(parents=True, exist_ok=True)
 
 print("Downloading ...")
-antwort = requests.get(URL, timeout=600)
-antwort.raise_for_status()
-ROH.write_bytes(antwort.content)
-print(f"  {len(antwort.content) / 1e6:.1f} MB")
+response = requests.get(URL, timeout=600)
+response.raise_for_status()
+RAW.write_bytes(response.content)
+print(f"  {len(response.content) / 1e6:.1f} MB")
 
-daten = pd.read_csv(ROH, parse_dates=["measure_date"])
-print(f"  {len(daten)} rows read")
+data = pd.read_csv(RAW, parse_dates=["measure_date"])
+print(f"  {len(data)} rows read")
 
-daten["datum"] = daten["measure_date"].dt.tz_localize(None).dt.normalize()
-daten = daten.drop(columns=["measure_date"])
+data["date"] = data["measure_date"].dt.tz_localize(None).dt.normalize()
+data = data.drop(columns=["measure_date"])
 
-negativ = (daten["HS"] < 0).sum()
-daten.loc[daten["HS"] < 0, "HS"] = 0.0
-print(f"  {negativ} negative snow depths set to 0")
+negative = (data["HS"] < 0).sum()
+data.loc[data["HS"] < 0, "HS"] = 0.0
+print(f"  {negative} negative snow depths set to 0")
 
-daten = daten[["station_code", "datum", "hyear", "HS", "HN_1D"]]
-daten["station_code"] = daten["station_code"].astype("category")
-daten["hyear"] = daten["hyear"].astype("int16")
-daten["HS"] = daten["HS"].astype("float32")
-daten["HN_1D"] = daten["HN_1D"].astype("float32")
+data = data[["station_code", "date", "hyear", "HS", "HN_1D"]]
+data["station_code"] = data["station_code"].astype("category")
+data["hyear"] = data["hyear"].astype("int16")
+data["HS"] = data["HS"].astype("float32")
+data["HN_1D"] = data["HN_1D"].astype("float32")
 
-print(f"  memory: {daten.memory_usage(deep=True).sum() / 1e6:.1f} MB")
+print(f"  memory: {data.memory_usage(deep=True).sum() / 1e6:.1f} MB")
 
-daten.to_parquet(ZIEL, index=False)
-print(f"\nWritten: {len(daten)} rows up to {daten['datum'].max().date()}")
+data.to_parquet(TARGET, index=False)
+print(f"\nWritten: {len(data)} rows up to {data['date'].max().date()}")
