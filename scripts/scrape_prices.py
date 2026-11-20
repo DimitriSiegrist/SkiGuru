@@ -623,6 +623,8 @@ PARSERS = {"pricenow": scrape_pricenow, "adelboden": scrape_adelboden,
 # plausibility limits for one resort's result (task 11.2)
 MIN_DAYS = 30                 # shortest real season so far: Rinerhorn, 97 days
 PRICE_RANGE = (20, 200)       # CHF; real range so far: 30–122
+RETRIES = 1        # how often a failed resort is tried again
+RETRY_WAIT = 30    # seconds to wait before the next attempt
 
 
 def check_prices(df):
@@ -659,11 +661,18 @@ def main():
     frames, failed, ok  = [], [], []
     for rid in selected:
         cfg = RESORTS[rid]
-        try:
-            df = PARSERS[cfg["parser"]](cfg)
-        except Exception as e:  # any error in one shop → skip this resort, keep the others
-            failed.append((rid, f"{type(e).__name__}: {e}"))
-            print(f"{rid}: FAILED ({type(e).__name__}: {e})")
+        for attempt in range(RETRIES + 1):
+            try:
+                df = PARSERS[cfg["parser"]](cfg)
+                break  # success → leave the retry loop
+            except Exception as e:  # any error in one shop → wait and try again
+                error = f"{type(e).__name__}: {e}"
+                if attempt < RETRIES:
+                    print(f"{rid}: error ({error}), retrying in {RETRY_WAIT} s")
+                    time.sleep(RETRY_WAIT)
+        else:  # all attempts failed → skip this resort, keep the others
+            failed.append((rid, error))
+            print(f"{rid}: FAILED ({error})")
             continue
         if "season_start" in cfg:  # optional: drop days before the area opens
             df = df[pd.to_datetime(df["date"]) >= cfg["season_start"]]
