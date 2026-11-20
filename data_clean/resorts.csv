@@ -1,0 +1,26 @@
+resort_id,resort,lat,lon,piste_km,lifts,base_alt,top_alt,vertical_drop,km_blue,km_red,km_black,snowmaking_share,rating_family,rating_freeride,rating_park,source_url,collected_on
+engelberg_titlis,Engelberg-Titlis,46.8162,8.3957,70.0,18,1003,3020,2017,18.0,42.5,9.5,0.4,3,5,2,https://www.skiresort.info/ski-resort/titlis-engelberg/,2026-11-16
+flims_laax_falera,Flims Laax Falera,46.8201,9.2652,176.0,29,1100,3018,1918,85.0,76.0,15.0,0.37,5,5,5,https://www.skiresort.info/ski-resort/laax-flims-falera/,2026-11-16
+toggenburg_chaeserrugg,Toggenburg (Chäserrugg),47.1948,9.3093,50.0,12,900,2262,1362,8.0,40.0,2.0,0.25,,,,https://www.skiresort.info/ski-resort/chaeserrugg-unterwasser-alt-st-johann-toggenburg/,2026-11-16
+verbier_4_vallees,Verbier/4 Vallées,46.0936,7.2337,412.0,65,1350,3330,1980,107.0,202.0,103.0,0.95,4,5,5,https://www.skiresort.info/ski-resort/4-vallees-verbier-la-tzoumaz-nendaz-veysonnaz-thyon/,2026-11-16
+zermatt_matterhorn_ski_paradise,Zermatt/Matterhorn Ski Paradise,46.0147,7.7427,322.0,51,1562,3899,2337,75.0,220.0,27.0,0.8,4,5,4,https://www.skiresort.info/ski-resort/zermatt-breuil-cervinia-valtournenche-matterhorn/,2026-11-16
+grimentz_zinal,Grimentz-Zinal,46.1762,7.5741,115.0,21,1570,2900,1330,26.5,58.6,29.9,0.3,4,5,4,https://www.skiresort.info/ski-resort/grimentz-zinal/,2026-11-16
+adelboden_lenk,Adelboden-Lenk,46.4879,7.5604,86.0,22,1260,2200,940,46.0,34.0,6.0,0.6,4,5,4,https://www.skiresort.info/ski-resort/adelboden-lenk-chuenisbaergli-silleren-hahnenmoos-metsch/,2026-11-16
+crans_montana,Crans-Montana,46.3087,7.4673,140.0,24,1510,2927,1417,55.0,70.0,15.0,0.38,4,5,4,https://www.skiresort.info/ski-resort/crans-montana/,2026-11-16
+aletsch_arena,Aletsch Arena,46.3566,8.0464,104.0,35,1845,2869,1024,42.0,50.0,12.0,0.75,5,4,4,https://www.skiresort.info/ski-resort/aletsch-arena-riederalp-bettmeralp-fiesch-eggishorn/,2026-11-16
+belalp,Belalp,46.3717,7.9746,38.1,10,1322,3118,1796,15.1,12.1,10.9,0.2,5,5,4,https://www.skiresort.info/ski-resort/belalp-blatten/,2026-11-16
+leukerbad,Leukerbad,46.3836,7.6254,47.5,13,1411,2610,1199,3.5,27.0,17.0,0.6,3,3,2,https://www.skiresort.info/ski-resort/leukerbad/,2026-11-16
+savognin,Savognin,46.5964,9.5918,73.5,12,1168,2713,1545,32.5,38.0,3.0,0.15,5,3,2,https://www.skiresort.info/ski-resort/savognin/,2026-11-16
+flumserberg,Flumserberg,47.0938,9.2809,65.0,17,665,2222,1557,14.0,40.0,11.0,0.3,5,5,4,https://www.skiresort.info/ski-resort/flumserberg/,2026-11-16
+hoch_ybrig,Hoch-Ybrig,47.0112,8.7903,50.0,12,1040,1831,791,15.0,30.0,5.0,0.6,4,4,5,https://www.skiresort.info/ski-resort/hoch-ybrig-unteriberg-oberiberg/,2026-11-16
+stoos,Stoos,46.9913,8.6733,35.0,8,1300,1935,635,4.0,24.0,7.0,0.4,4,4,1,https://www.skiresort.info/ski-resort/stoos-fronalpstock-klingenstock/,2026-11-16
+saas_fee,Saas-Fee,46.1059,7.9281,101.0,23,1800,3573,1773,21.0,60.0,20.0,0.45,4,4,4,https://www.skiresort.info/ski-resort/saas-fee/,2026-11-16
+arosa_lenzerheide,Arosa Lenzerheide,46.7397,9.5563,225.0,43,1229,2865,1636,110.0,87.0,28.0,0.6,5,5,5,https://www.skiresort.info/ski-resort/arosa-lenzerheide/,2026-11-16
+andermatt_sedrun,Andermatt-Sedrun,46.6378,8.5953,70.0,13,1444,2600,1156,18.0,40.0,12.0,0.6,4,5,5,https://www.skiresort.info/ski-resort/andermatt-oberalp-sedrun/,2026-11-16
+davos_klosters_parsenn,Davos Klosters – Parsenn,46.8089,9.8386,95.5,18,810,2844,2034,17.3,60.5,17.7,0.4,2,5,4,https://www.skiresort.info/ski-resort/parsenn-davos-klosters/,2026-11-16
+davos_klosters_jakobshorn,Davos Klosters – Jakobshorn,46.7917,9.8218,41.2,13,1535,2568,1033,25.5,13.2,2.5,0.85,4,5,5,https://www.skiresort.info/ski-resort/jakobshorn-davos-klosters/,2026-11-16
+davos_klosters_rinerhorn,Davos Klosters – Rinerhorn,46.7456,9.7808,51.5,7,1459,2490,1031,15.6,23.1,12.8,0.12,3,3,2,https://www.skiresort.info/ski-resort/rinerhorn-davos-klosters/,2026-11-16
+davos_klosters_madrisa,Davos Klosters – Madrisa,46.8844,9.8757,26.0,9,1142,2602,1460,7.5,15.5,3.0,0.2,5,4,2,https://www.skiresort.info/ski-resort/madrisa-davos-klosters/,2026-11-16
+jungfrau_kleine_scheidegg_maennlichen,Jungfrau – Kleine Scheidegg/Männlichen,46.6247,8.0191,102.0,23,944,2400,1456,33.0,55.0,14.0,0.7,5,5,1,https://www.skiresort.info/ski-resort/kleine-scheidegg-maennlichen-grindelwald-wengen/,2026-11-16
+jungfrau_first,Jungfrau – First,46.6251,8.0418,49.0,10,1034,2500,1466,30.0,11.0,8.0,0.45,4,4,5,https://www.skiresort.info/ski-resort/first-grindelwald/,2026-11-16
+jungfrau_schilthorn_muerren,Jungfrau – Schilthorn/Mürren,46.5551,7.9017,54.0,17,796,2970,2174,19.0,23.0,12.0,0.65,4,5,5,https://www.skiresort.info/ski-resort/schilthorn-muerren-lauterbrunnen/,2026-11-16

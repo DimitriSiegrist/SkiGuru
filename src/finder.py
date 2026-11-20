@@ -5,21 +5,22 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 
-# fixed reference ranges for the pilot (later: min-max across all resorts, task 15)
-RANGES = {"piste_km": (0, 300), "lifts": (0, 80), "vertical_drop": (0, 2200),
-          "top_alt": (1500, 3500), "snowmaking_share": (0, 1),
-          "family_friendly": (0, 1), "freeride": (0, 1), "parks": (0, 1)}
+# fixed reference ranges = real min/max of the 25 resorts, rounded outward (task 10.3)
+# set once, not min-max across the list → B does not change when a resort is added
+RANGES = {"piste_km": (25, 425), "lifts": (5, 70), "vertical_drop": (600, 2400),
+          "top_alt": (1800, 3900), "snowmaking_share": (0, 1),
+          "rating_family": (1, 5), "rating_freeride": (1, 5), "rating_park": (1, 5)}  # Skiresort stars
 
 # default weights: CHF for the best vs. the worst value of each attribute
 DEFAULT_WEIGHTS = {"piste_km": 30, "lifts": 5, "vertical_drop": 15, "top_alt": 10,
                    "snowmaking_share": 5, "x_snow_depth": 25, "x_new_snow": 10,
-                   "family_friendly": 5, "freeride": 5, "parks": 5}
+                   "rating_family": 5, "rating_freeride": 5, "rating_park": 5}
 
 
 def load_data():
     """All inputs as DataFrames (attributes, prices, snow, train, car)."""
     return {
-        "attrs": pd.read_csv(ROOT / "docs" / "resort_attributes.csv"),
+        "attrs": pd.read_csv(ROOT / "data_clean" / "resorts.csv"),
         "prices": pd.read_csv(ROOT / "data_clean" / "prices.csv"),
         "snow": pd.read_csv(ROOT / "data_clean" / "snow_expected.csv"),
         "train": pd.read_csv(ROOT / "data_clean" / "travel_train.csv"),
@@ -28,7 +29,9 @@ def load_data():
 
 
 def scale(x, lo, hi):
-    """Scale to 0–1 with a fixed range, clipped at 0 and 1."""
+    """Scale to 0–1 with a fixed range, clipped at 0 and 1; missing values → 0.5 (neutral)."""
+    if pd.isna(x):
+        return 0.5
     return min(max((x - lo) / (hi - lo), 0), 1)
 
 
