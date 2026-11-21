@@ -102,9 +102,9 @@ with st.expander("How is the forecast calculated?"):
     error, t = result["std_errors"], result["t_values"]
 
     st.markdown(
-        "On a day without new snow the depth falls because old snow settles, fresh snow "
-        "settles faster and warmth melts it. One degree melts more in spring than in "
-        "midwinter, because the sun is stronger."
+        "A linear regression of the daily loss of snow depth, estimated on 30 years of SLF "
+        "station data. The loss is the sum of three effects: old snow settling, fresh snow "
+        "settling faster, and melt from warmth, which is stronger the higher the sun."
     )
 
     st.markdown("**Model**")
