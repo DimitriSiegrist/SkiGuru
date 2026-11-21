@@ -116,6 +116,11 @@
 ## Car for all resorts (task 13, 20 Nov 2026)
 - Parking: daily rate of the car park at (or nearest to) the valley station for every resort, as for Engelberg (`docs/car_parking.csv`)
   - Reason: most car parks publish only a daily rate; for a ski day of 8–10 h, hourly or 12-h tariffs would be CHF 0–4 cheaper (e.g. Saas-Fee CHF 16 up to 12 h instead of CHF 20 per day; Belalp CHF 1.50/h, max CHF 16) → small next to K (CHF 35–170), same direction for all resorts, easy to explain
+  - Where a car park has no daily rate (only hourly or 8-h tariffs), the price for a ski day of about 9 h is used (arrive ~08:00, leave ~17:00), same rule for all resorts:
+    - Davos Parsenn and Jakobshorn: CHF 5 for the first 5 h, then CHF 1/h → CHF 9
+    - Crans-Montana (Crans-Cry d'Er): CHF 4/h in winter, capped at CHF 32/day → CHF 32
+    - Andermatt (P1/P2 at the station): "over 2 hours" CHF 9
+    - Jungfrau: 8-h tariffs (Grindelwald Eiger+ CHF 20 for First, Stechelberg CHF 8 for Mürren) and the 2–24 h tariff (Grindelwald Terminal CHF 15 for Kleine Scheidegg/Männlichen)
 - Shuttle to car-free resorts (Zermatt: train Täsch–Zermatt CHF 17.20 return, adult): stored as the full adult fare in `extra_chf_return` (`docs/car_parking.csv` → `data_clean/travel_car.csv`); the user's travel pass is applied in `src/finder.py` (task 15.2): GA → 0, Halbtax → 50 % (MGB: shuttle free with GA, half price with Half Fare)
   - Reason: same logic as train mode (the travel pass lowers the user's fare); the CSV stays independent of the user
 - Winter-closed passes (task 13, 21 Nov 2026): ORS ignores seasonal closures and routed Aletsch and Belalp via the Gotthard tunnel and the Nufenen pass (closed in winter; Google Maps showed the closure) → ORS now avoids small boxes around the summits of Nufenen, Grimsel, Furka and Susten (`CLOSED_PASSES`, `avoid_polygons` in `scripts/travel_car.py`)
