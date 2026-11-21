@@ -77,5 +77,6 @@ def uncertainty(curve, errors):
     too_low = np.interp(day, horizons, [0] + [entry["low"] for entry in errors.values()])
     too_high = np.interp(day, horizons, [0] + [entry["high"] for entry in errors.values()])
     lower = (curve - too_high).clip(lower=0)
-    upper = (curve - too_low).clip(upper=curve.iloc[0])  # without new snow the depth cannot rise
+    # Without new snow the depth cannot rise, so the upper bound never goes back up
+    upper = (curve - too_low).cummin()
     return lower, upper

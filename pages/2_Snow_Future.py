@@ -79,7 +79,7 @@ with side:
     period = pd.date_range(first_day, last_day, freq="D").dayofyear
     same_days = station_temp[station_temp["date"].dt.dayofyear.isin(period)]
 
-    label = "Mean air temperature of the coming days in °C"
+    label = "Mean air temperature in °C"
     start = 0.0
     if not same_days.empty:
         normal = float(same_days["TA_mean"].mean())
@@ -94,20 +94,6 @@ lower, upper = uncertainty(curve, model["errors"])
 
 st.divider()
 st.markdown("##### Forecast without new snow")
-
-measured = "today" if today.date() == pd.Timestamp.now().date() else f"on {today.day} {today:%B}"
-interval = f"95 % prediction interval: {lower.iloc[-1]:.0f} to {upper.iloc[-1]:.0f} cm"
-if curve.iloc[-1] <= 0:
-    gone = curve[curve <= 0].index[0]
-    st.write(
-        f"**{depth:.0f} cm** {measured}, gone by about **{gone.day} {gone:%B}** "
-        f"({interval} on {last_day.day} {last_day:%B})."
-    )
-else:
-    st.write(
-        f"**{depth:.0f} cm** {measured}, about **{curve.iloc[-1]:.0f} cm** "
-        f"on {last_day.day} {last_day:%B} ({interval})."
-    )
 
 # --- Method ---
 with st.expander("How is the forecast calculated?"):
