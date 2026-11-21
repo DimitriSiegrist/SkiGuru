@@ -1,8 +1,8 @@
 {
   "coefficients": {
-    "HS_before": 0.00539,
-    "fresh": 0.1343,
-    "warm_sun": 0.79045
+    "HS_before": 0.00528,
+    "fresh": 0.13413,
+    "warm_sun": 0.79296
   },
   "errors": {
     "7": {
@@ -20,21 +20,20 @@
   },
   "results": {
     "std_errors": {
-      "HS_before": 0.00016,
-      "fresh": 0.00303,
-      "warm_sun": 0.01212
+      "HS_before": 0.00014,
+      "fresh": 0.00278,
+      "warm_sun": 0.01087
     },
     "t_values": {
-      "HS_before": 34.0,
-      "fresh": 44.3,
-      "warm_sun": 65.2
+      "HS_before": 36.5,
+      "fresh": 48.3,
+      "warm_sun": 72.9
     },
-    "observations": 190242,
-    "stations": 115,
+    "observations": 276134,
+    "stations": 130,
     "first_winter": 1997,
-    "last_winter": 2019,
-    "r2": 0.563,
-    "stations_test": 130,
+    "r2": 0.569,
+    "validation_winter": 2019,
     "r2_test": 0.579,
     "spells_14": 2086,
     "error_14": 8.1

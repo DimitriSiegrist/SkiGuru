@@ -147,13 +147,16 @@ with st.expander("How is the forecast calculated?"):
 | $\nu$, fresh snow stock | {coefficient["fresh"]:.4f} | {error["fresh"]:.4f} | {t["fresh"]:.1f} |
 | $\delta$, degrees above freezing × sun index | {coefficient["warm_sun"]:.4f} | {error["warm_sun"]:.4f} | {t["warm_sun"]:.1f} |
 | Observations | {result["observations"]:,} | | |
-| Stations, estimation sample | {result["stations"]} | | |
-| $R^2$, estimation sample (winters {result["first_winter"]} to {result["last_winter"]}) | {result["r2"]:.3f} | | |
-| Stations, out of sample | {result["stations_test"]} | | |
-| $R^2$, out of sample (winters since {result["last_winter"] + 1}) | {result["r2_test"]:.3f} | | |
+| Stations | {result["stations"]} | | |
+| $R^2$ | {result["r2"]:.3f} | | |
+| $R^2$ out of sample | {result["r2_test"]:.3f} | | |
 """
     )
-    st.markdown("Standard errors clustered by station and by day.")
+    st.markdown(
+        f"Estimated on all winters since {result['first_winter']}. Standard errors clustered by station "
+        f"and by day. Out of sample: estimated on the winters up to {result['validation_winter']} only "
+        f"and applied to the winters since {result['validation_winter'] + 1}."
+    )
 
     st.markdown("**Forecast**")
     st.markdown(
