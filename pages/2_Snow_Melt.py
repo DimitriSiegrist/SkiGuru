@@ -149,18 +149,16 @@ with st.expander("How is the forecast calculated?"):
 | Observations | {result["observations"]:,} | | |
 | Stations | {result["stations"]} | | |
 | $R^2$ | {result["r2"]:.3f} | | |
-| $R^2$ out of sample | {result["r2_test"]:.3f} | | |
 """
     )
     st.markdown(
-        f"Estimated on all winters since {result['first_winter']}. Standard errors clustered by station "
-        f"and by day. Out of sample: estimated on the winters up to {result['validation_winter']} only "
-        f"and applied to the winters since {result['validation_winter'] + 1}."
+        f"Estimated on all winters since {result['first_winter']}. "
+        "Standard errors clustered by station and by day."
     )
 
     st.markdown("**Forecast**")
     st.markdown(
-        f"Out of sample, over {result['spells_14']:,} periods of 14 days without snowfall, "
+        f"Over {result['spells_14']:,} periods of 14 days without snowfall, "
         f"the mean absolute forecast error is {result['error_14']:.0f} cm.\n\n"
         "The model assumes that no new snow falls and that every day is equally warm. "
         "Wind, rain, cloud cover and the slope are not taken into account.\n\n"
