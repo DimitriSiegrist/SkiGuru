@@ -7,14 +7,14 @@ from src.map import BASEMAPS, map_legend, station_map
 from src.melt import forecast, fresh_stock, load_model, uncertainty
 from src.style import setup_page
 
-setup_page("Snow Melt")
+setup_page("Snow Future")
 
 snow, live = load_snow()
 stations = load_stations()
 temp = load_temperature()
 model = load_model()
 
-st.title("Snow Melt")
+st.title("Snow Future")
 st.caption("How long will the snow already lying last if none falls?")
 
 # --- Station: the one chosen on another page, otherwise the one with the most snow ---
@@ -149,18 +149,16 @@ with st.expander("How is the forecast calculated?"):
 | Observations | {result["observations"]:,} | | |
 | Stations | {result["stations"]} | | |
 | $R^2$ | {result["r2"]:.3f} | | |
-| $R^2$ out of sample | {result["r2_test"]:.3f} | | |
 """
     )
     st.markdown(
-        f"Estimated on all winters since {result['first_winter']}. Standard errors clustered by station "
-        f"and by day. Out of sample: estimated on the winters up to {result['validation_winter']} only "
-        f"and applied to the winters since {result['validation_winter'] + 1}."
+        f"Estimated on all winters since {result['first_winter']}. "
+        "Standard errors clustered by station and by day."
     )
 
     st.markdown("**Forecast**")
     st.markdown(
-        f"Out of sample, over {result['spells_14']:,} periods of 14 days without snowfall, "
+        f"Over {result['spells_14']:,} periods of 14 days without snowfall, "
         f"the mean absolute forecast error is {result['error_14']:.0f} cm.\n\n"
         "The model assumes that no new snow falls and that every day is equally warm. "
         "Wind, rain, cloud cover and the slope are not taken into account.\n\n"

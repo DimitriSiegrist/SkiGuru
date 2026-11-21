@@ -57,7 +57,7 @@ HOME_CSS = """
 TOOLS = [
     ("history", "Ski touring", "Snow History", "pages/1_Snow_History.py",
      "New snow and snow depth over the past weeks, to judge avalanche risk and whether a tour is feasible at all."),
-    ("melt", "Ski touring", "Snow Melt", "pages/2_Snow_Melt.py",
+    ("melt", "Ski touring", "Snow Future", "pages/2_Snow_Future.py",
      "How long the snow already lying will last if none falls. Most useful in spring."),
     ("finder", "On piste", "Resort Finder", "pages/3_Resort_Finder.py",
      "Set your weights on price, travel time, piste kilometres and mix, and it ranks resorts by exactly those."),
