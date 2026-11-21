@@ -1,5 +1,7 @@
 """Fits the snow melt model: how much snow depth is lost on a day without new snow."""
 
+import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -7,6 +9,10 @@ import pandas as pd
 import statsmodels.api as sm
 
 BASE = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(BASE))
+
+from src.melt import COEFFICIENTS, KEEP, forecast, load_coefficients, sun_index
+
 SNOW = BASE / "data_clean" / "daily_snow.parquet"
 TEMPERATURE = BASE / "data_clean" / "daily_temp.parquet"
 TEMPERATURE_RECENT = BASE / "data_clean" / "daily_temp_recent.parquet"
@@ -14,31 +20,15 @@ TEMPERATURE_RECENT = BASE / "data_clean" / "daily_temp_recent.parquet"
 MIN_DEPTH = 20     # cm of snow the day before
 MIN_READINGS = 44  # of 48 half-hourly temperature values
 MAX_CHANGE = 30    # cm per day, anything beyond is a measuring error
-KEEP = 0.7         # share of the fresh snow stock that is left a day later
-LATITUDE = 46.8    # degrees north, the middle of Switzerland
 LAST_TRAINING_WINTER = 2019  # later winters are kept aside to test the model
 
+CHOSEN = "D  C + fresh snow"
 MODELS = {
     "A  depth + degrees": ["HS_before", "warmth"],
     "B  A + fresh snow": ["HS_before", "fresh", "warmth"],
     "C  depth + degrees x sun": ["HS_before", "warm_sun"],
     "D  C + fresh snow": ["HS_before", "fresh", "warm_sun"],
 }
-
-
-def sun_index(dates):
-    """Possible solar energy per day, scaled to 1 at midsummer (FAO-56, equations 21 to 25)."""
-    lat = np.deg2rad(LATITUDE)
-
-    def energy(day):
-        tilt = 0.409 * np.sin(2 * np.pi * day / 365 - 1.39)
-        distance = 1 + 0.033 * np.cos(2 * np.pi * day / 365)
-        sunset = np.arccos(-np.tan(lat) * np.tan(tilt))
-        return (24 * 60 / np.pi) * 0.0820 * distance * (
-            sunset * np.sin(lat) * np.sin(tilt) + np.cos(lat) * np.cos(tilt) * np.sin(sunset)
-        )
-
-    return energy(dates.dt.dayofyear) / energy(np.arange(1, 366)).max()
 
 
 def load_temperature():
@@ -147,7 +137,15 @@ if __name__ == "__main__":
     table, results = compare(days)
     print(table.round(3).to_string())
 
-    chosen = results["D  C + fresh snow"]
+    chosen = results[CHOSEN]
     summary = pd.DataFrame({"coefficient": chosen.params, "std error": chosen.bse, "t": chosen.tvalues})
     print("\nModel D")
     print(summary.round({"coefficient": 4, "std error": 5, "t": 1}).to_string())
+
+    COEFFICIENTS.write_text(json.dumps(chosen.params.round(5).to_dict(), indent=2) + "\n")
+    print(f"\nSaved to {COEFFICIENTS.relative_to(BASE)}")
+
+    # A first look: 100 cm of old snow, two weeks at 5 degrees, starting on 15 April
+    example = forecast(100, 0, [5] * 14, "2026-04-15", load_coefficients())
+    print("\n100 cm on 14 April, then 5 degrees every day:")
+    print(example.round(1).iloc[[0, 6, 13]].to_string())
