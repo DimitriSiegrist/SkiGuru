@@ -1,9 +1,10 @@
-"""Builds the table of days used to fit the snow melt model."""
+"""Fits the snow melt model: how much snow depth is lost on a day without new snow."""
 
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import statsmodels.api as sm
 
 BASE = Path(__file__).resolve().parent.parent
 SNOW = BASE / "data_clean" / "daily_snow.parquet"
@@ -15,6 +16,14 @@ MIN_READINGS = 44  # of 48 half-hourly temperature values
 MAX_CHANGE = 30    # cm per day, anything beyond is a measuring error
 KEEP = 0.7         # share of the fresh snow stock that is left a day later
 LATITUDE = 46.8    # degrees north, the middle of Switzerland
+LAST_TRAINING_WINTER = 2019  # later winters are kept aside to test the model
+
+MODELS = {
+    "A  depth + degrees": ["HS_before", "warmth"],
+    "B  A + fresh snow": ["HS_before", "fresh", "warmth"],
+    "C  depth + degrees x sun": ["HS_before", "warm_sun"],
+    "D  C + fresh snow": ["HS_before", "fresh", "warm_sun"],
+}
 
 
 def sun_index(dates):
@@ -96,19 +105,49 @@ def training_days():
     return days.loc[keep, columns].reset_index(drop=True)
 
 
+def r_squared(actual, predicted):
+    """Share of the variation around the mean that the prediction explains."""
+    return 1 - ((actual - predicted) ** 2).sum() / ((actual - actual.mean()) ** 2).sum()
+
+
+def fit(train, columns):
+    """Least squares without intercept: no snow and no warmth means no decline.
+
+    Standard errors are clustered by station and by day, because the errors of
+    one station on neighbouring days and of all stations on one day belong together.
+    """
+    groups = np.column_stack([train["station_code"].factorize()[0], train["date"].factorize()[0]])
+    model = sm.OLS(train["decline"].astype(float), train[columns].astype(float))
+    return model.fit(cov_type="cluster", cov_kwds={"groups": groups})
+
+
+def compare(days):
+    """Fits every model on the winters up to 2019 and tests it on the later ones."""
+    train = days[days["hyear"] <= LAST_TRAINING_WINTER]
+    test = days[days["hyear"] > LAST_TRAINING_WINTER]
+    rows, results = [], {}
+    for name, columns in MODELS.items():
+        result = fit(train, columns)
+        results[name] = result
+        rows.append({
+            "model": name,
+            "parameters": len(columns),
+            "R2 train": r_squared(train["decline"], result.predict(train[columns].astype(float))),
+            "R2 test": r_squared(test["decline"], result.predict(test[columns].astype(float))),
+            "t degrees": result.tvalues[columns[-1]],
+        })
+    return pd.DataFrame(rows).set_index("model"), results
+
+
 if __name__ == "__main__":
     days = training_days()
     print(f"{len(days):,} days from {days['station_code'].nunique()} stations, "
-          f"{days['date'].min():%d.%m.%Y} to {days['date'].max():%d.%m.%Y}")
-    print(f"{(days['hyear'] <= 2019).sum():,} of them up to winter 2019\n")
+          f"{(days['hyear'] <= LAST_TRAINING_WINTER).sum():,} of them up to winter {LAST_TRAINING_WINTER}\n")
 
-    print("Sun index:", sun_index(pd.Series(pd.to_datetime(["2025-12-21", "2026-03-21", "2026-06-21"]))).round(2).tolist())
+    table, results = compare(days)
+    print(table.round(3).to_string())
 
-    # Does one degree melt more in spring than in winter?
-    days["season"] = days["date"].dt.month.map(
-        {12: "Dec-Feb", 1: "Dec-Feb", 2: "Dec-Feb", 4: "Apr-Jun", 5: "Apr-Jun", 6: "Apr-Jun"}
-    )
-    days["temperature"] = pd.cut(days["warmth"], [-1, 0, 3, 6, 30], labels=["frost", "0 to 3", "3 to 6", "above 6"])
-    table = days.pivot_table(index="temperature", columns="season", values="decline", aggfunc="mean", observed=True)
-    print("\nMean decline in cm per day:")
-    print(table[["Dec-Feb", "Apr-Jun"]].round(1))
+    chosen = results["D  C + fresh snow"]
+    summary = pd.DataFrame({"coefficient": chosen.params, "std error": chosen.bse, "t": chosen.tvalues})
+    print("\nModel D")
+    print(summary.round({"coefficient": 4, "std error": 5, "t": 1}).to_string())
