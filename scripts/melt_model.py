@@ -168,9 +168,11 @@ def check_forecasts(days, coefficients, horizon):
     return pd.DataFrame(rows)
 
 
-def summarise(spells):
-    """Forecast quality on the winters kept aside. Spells where both end at zero are trivial and left out."""
-    test = spells[(spells["hyear"] > LAST_TRAINING_WINTER) & ~((spells["measured"] == 0) & (spells["predicted"] == 0))]
+def summarise(spells, first_winter=None):
+    """Forecast quality, on all winters or from one winter on. Spells where both end at zero are trivial and left out."""
+    test = spells[~((spells["measured"] == 0) & (spells["predicted"] == 0))]
+    if first_winter is not None:
+        test = test[test["hyear"] >= first_winter]
     error = test["predicted"] - test["measured"]
     return {
         "spells": len(test),
@@ -196,18 +198,26 @@ if __name__ == "__main__":
     print(table.round(3).to_string())
 
     tested = results[CHOSEN].params.round(5).to_dict()
-    quality = {horizon: summarise(check_forecasts(days, tested, horizon)) for horizon in (7, 14, 21)}
-    print(f"\nForecasts over dry spells since winter {LAST_TRAINING_WINTER + 1}, with the coefficients fitted up to {LAST_TRAINING_WINTER}:")
-    print(pd.DataFrame(quality).add_suffix(" days").round(2).to_string())
+    unseen = {
+        horizon: summarise(check_forecasts(days, tested, horizon), first_winter=LAST_TRAINING_WINTER + 1)
+        for horizon in (7, 14, 21)
+    }
+    print(f"\nForecasts with the coefficients fitted up to {LAST_TRAINING_WINTER}, dry spells since winter {LAST_TRAINING_WINTER + 1}:")
+    print(pd.DataFrame(unseen).add_suffix(" days").round(2).to_string())
 
     # Step 2, final model: the chosen model fitted on all winters, this is what the page uses
     final = fit(training, columns)
+    coefficients = final.params.round(5).to_dict()
     r2 = r_squared(training["decline"], final.predict(training[columns].astype(float)))
     summary = pd.DataFrame({"coefficient": final.params, "std error": final.bse, "t": final.tvalues})
     print(f"\nFinal model on all {len(training):,} days, R2 {r2:.3f}")
     print(summary.round({"coefficient": 4, "std error": 5, "t": 1}).to_string())
 
-    # The band on the page comes from step 1, because only there the forecasts were made for unseen winters
+    quality = {horizon: summarise(check_forecasts(days, coefficients, horizon)) for horizon in (7, 14, 21)}
+    print("\nForecasts with the final coefficients, dry spells of all winters:")
+    print(pd.DataFrame(quality).add_suffix(" days").round(2).to_string())
+
+    # The page needs the coefficients, the errors for the band and the figures for its results table
     errors = {
         str(horizon): {"low": round(result["band low (cm)"], 1), "high": round(result["band high (cm)"], 1)}
         for horizon, result in quality.items()
@@ -224,6 +234,5 @@ if __name__ == "__main__":
         "spells_14": int(quality[14]["spells"]),
         "error_14": round(quality[14]["mean error (cm)"], 1),
     }
-    model = {"coefficients": final.params.round(5).to_dict(), "errors": errors, "results": figures}
-    MODEL.write_text(json.dumps(model, indent=2) + "\n")
+    MODEL.write_text(json.dumps({"coefficients": coefficients, "errors": errors, "results": figures}, indent=2) + "\n")
     print(f"\nSaved to {MODEL.relative_to(BASE)}")
