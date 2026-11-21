@@ -11,7 +11,7 @@ import statsmodels.api as sm
 BASE = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(BASE))
 
-from src.melt import COEFFICIENTS, KEEP, forecast, load_coefficients, sun_index
+from src.melt import KEEP, MODEL, forecast, sun_index
 
 SNOW = BASE / "data_clean" / "daily_snow.parquet"
 TEMPERATURE = BASE / "data_clean" / "daily_temp.parquet"
@@ -21,6 +21,7 @@ MIN_DEPTH = 20     # cm of snow the day before
 MIN_READINGS = 44  # of 48 half-hourly temperature values
 MAX_CHANGE = 30    # cm per day, anything beyond is a measuring error
 LAST_TRAINING_WINTER = 2019  # later winters are kept aside to test the model
+BAND = 0.95        # share of past forecasts the band on the page should cover
 
 CHOSEN = "D  C + fresh snow"
 MODELS = {
@@ -178,8 +179,8 @@ def summarise(spells):
         "bias (cm)": error.mean(),
         "within 10 cm": (error.abs() <= 10).mean(),
         "R2 of the loss": r_squared(test["start"] - test["measured"], test["start"] - test["predicted"]),
-        "10 % below (cm)": error.quantile(0.10),
-        "10 % above (cm)": error.quantile(0.90),
+        "band low (cm)": error.quantile((1 - BAND) / 2),
+        "band high (cm)": error.quantile((1 + BAND) / 2),
     }
 
 
@@ -197,11 +198,16 @@ if __name__ == "__main__":
     print("\nModel D")
     print(summary.round({"coefficient": 4, "std error": 5, "t": 1}).to_string())
 
-    COEFFICIENTS.write_text(json.dumps(chosen.params.round(5).to_dict(), indent=2) + "\n")
-    print(f"\nSaved to {COEFFICIENTS.relative_to(BASE)}")
-
     # The real test: forecasts over several days against what was measured
-    coefficients = load_coefficients()
-    quality = {f"{horizon} days": summarise(check_forecasts(days, coefficients, horizon)) for horizon in (7, 14, 21)}
+    coefficients = chosen.params.round(5).to_dict()
+    quality = {horizon: summarise(check_forecasts(days, coefficients, horizon)) for horizon in (7, 14, 21)}
     print(f"\nForecasts over dry spells since winter {LAST_TRAINING_WINTER + 1}:")
-    print(pd.DataFrame(quality).round(2).to_string())
+    print(pd.DataFrame(quality).add_suffix(" days").round(2).to_string())
+
+    # The page needs the coefficients for the forecast and the errors for the band around it
+    errors = {
+        str(horizon): {"low": round(result["band low (cm)"], 1), "high": round(result["band high (cm)"], 1)}
+        for horizon, result in quality.items()
+    }
+    MODEL.write_text(json.dumps({"coefficients": coefficients, "errors": errors}, indent=2) + "\n")
+    print(f"\nSaved to {MODEL.relative_to(BASE)}")

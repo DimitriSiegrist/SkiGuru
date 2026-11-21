@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent
-COEFFICIENTS = BASE / "data_clean" / "melt_model.json"
+MODEL = BASE / "data_clean" / "melt_model.json"
 
 KEEP = 0.7       # share of the fresh snow stock that is left a day later
 LATITUDE = 46.8  # degrees north, the middle of Switzerland
@@ -29,9 +29,19 @@ def sun_index(dates):
     return energy(day_of_year) / energy(np.arange(1, 366)).max()
 
 
-def load_coefficients():
-    """The coefficients estimated by scripts/melt_model.py."""
-    return json.loads(COEFFICIENTS.read_text())
+def load_model():
+    """Coefficients and forecast errors as saved by scripts/melt_model.py."""
+    return json.loads(MODEL.read_text())
+
+
+def fresh_stock(history, day):
+    """Fresh snow stock on `day`: the new snow of the past three weeks, older snowfalls count less.
+
+    history: daily rows of one station with the columns date and HN_1D
+    """
+    age = (day - history["date"]).dt.days
+    recent = (age >= 0) & (age <= 20)
+    return float((KEEP ** age[recent] * history.loc[recent, "HN_1D"].fillna(0)).sum())
 
 
 def forecast(depth, fresh, temperatures, first_day, coefficients):
@@ -54,3 +64,18 @@ def forecast(depth, fresh, temperatures, first_day, coefficients):
         fresh = fresh * KEEP
         depths.append(depth)
     return pd.Series(depths, index=dates)
+
+
+def uncertainty(curve, errors):
+    """Range in which the measured depth ended up in 95 of 100 forecasts over past dry spells.
+
+    curve: forecast with today's depth in front
+    errors: forecast minus measured after 7, 14 and 21 days, as 2.5 % and 97.5 % quantiles
+    """
+    day = np.arange(len(curve))
+    horizons = [0] + [int(horizon) for horizon in errors]
+    too_low = np.interp(day, horizons, [0] + [entry["low"] for entry in errors.values()])
+    too_high = np.interp(day, horizons, [0] + [entry["high"] for entry in errors.values()])
+    lower = (curve - too_high).clip(lower=0)
+    upper = (curve - too_low).clip(upper=curve.iloc[0])  # without new snow the depth cannot rise
+    return lower, upper
