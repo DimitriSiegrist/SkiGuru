@@ -117,7 +117,7 @@ def map_legend():
     st.markdown(
         f"<div style='display:flex;gap:2px;max-width:520px;margin-top:6px'>{cells}</div>"
         "<div style='font-size:.68rem;color:#808080;margin-top:8px'>"
-        "Snow depth in cm at the station."
+        "Snow depth in cm"
         "</div>"
         "<div style='font-size:.68rem;color:#aaaaaa;margin-top:10px'>"
         "Map © swisstopo · Data © SLF"

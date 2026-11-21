@@ -17,5 +17,26 @@
       "low": -27.6,
       "high": 35.6
     }
+  },
+  "results": {
+    "std_errors": {
+      "HS_before": 0.00016,
+      "fresh": 0.00303,
+      "warm_sun": 0.01212
+    },
+    "t_values": {
+      "HS_before": 34.0,
+      "fresh": 44.3,
+      "warm_sun": 65.2
+    },
+    "observations": 190242,
+    "stations": 115,
+    "first_winter": 1997,
+    "last_winter": 2019,
+    "r2": 0.563,
+    "stations_test": 130,
+    "r2_test": 0.579,
+    "spells_14": 2086,
+    "error_14": 8.1
   }
 }

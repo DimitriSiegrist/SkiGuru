@@ -204,10 +204,25 @@ if __name__ == "__main__":
     print(f"\nForecasts over dry spells since winter {LAST_TRAINING_WINTER + 1}:")
     print(pd.DataFrame(quality).add_suffix(" days").round(2).to_string())
 
-    # The page needs the coefficients for the forecast and the errors for the band around it
+    # The page needs the coefficients, the errors for the band and the figures for its results table
     errors = {
         str(horizon): {"low": round(result["band low (cm)"], 1), "high": round(result["band high (cm)"], 1)}
         for horizon, result in quality.items()
     }
-    MODEL.write_text(json.dumps({"coefficients": coefficients, "errors": errors}, indent=2) + "\n")
+    train = training[training["hyear"] <= LAST_TRAINING_WINTER]
+    test = training[training["hyear"] > LAST_TRAINING_WINTER]
+    figures = {
+        "std_errors": chosen.bse.round(5).to_dict(),
+        "t_values": chosen.tvalues.round(1).to_dict(),
+        "observations": len(train),
+        "stations": int(train["station_code"].nunique()),
+        "first_winter": int(train["hyear"].min()),
+        "last_winter": LAST_TRAINING_WINTER,
+        "r2": round(table.loc[CHOSEN, "R2 train"], 3),
+        "stations_test": int(test["station_code"].nunique()),
+        "r2_test": round(table.loc[CHOSEN, "R2 test"], 3),
+        "spells_14": int(quality[14]["spells"]),
+        "error_14": round(quality[14]["mean error (cm)"], 1),
+    }
+    MODEL.write_text(json.dumps({"coefficients": coefficients, "errors": errors, "results": figures}, indent=2) + "\n")
     print(f"\nSaved to {MODEL.relative_to(BASE)}")
