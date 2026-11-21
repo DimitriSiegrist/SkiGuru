@@ -90,10 +90,7 @@ def highest_level(feature):
 
 st.title("Snow History")
 note = "" if live else " Live update unavailable, showing stored data."
-st.caption(
-    f"{len(stations)} IMIS snow stations. "
-    f"Last measurement {latest:%d %B %Y}.{note}"
-)
+st.caption(f"New snow and snow depth over the past weeks, to judge avalanche risk.{note}")
 
 # --- Controls above the map ---
 top_left, top_right = st.columns([1, 1], gap="large")
@@ -144,19 +141,6 @@ with info_col:
 
         st.subheader(station["name"])
         st.caption(f"{selected} · {format_metres(station['elevation'])} m a.s.l.")
-
-        if station["HS"] == 0:
-            st.write("No snow at the station right now.")
-        elif new_7 > 0:
-            st.write(
-                f"**{station['HS']:.0f} cm** of snow, **{new_7:.0f} cm** of which "
-                "fell in the past week."
-            )
-        else:
-            st.write(
-                f"**{station['HS']:.0f} cm** of snow. Nothing new has fallen in the "
-                "past week."
-            )
 
         st.metric(f"Snow depth · {latest:%d %b}", f"{station['HS']:.0f} cm")
         st.metric("New snow · last 7 days", f"{new_7:.0f} cm")
@@ -245,13 +229,8 @@ if days is None:
     season_start = pd.Timestamp(year=season - 1, month=10, day=1)
     season_end = pd.Timestamp(year=season, month=6, day=30)
     series = history[(history["date"] >= season_start) & (history["date"] <= season_end)]
-    period_text = (
-        f"Season {season - 1}/{str(season)[-2:]}, 1 October to 30 June, "
-        "the ski touring season"
-    )
 else:
     series = history[history["date"] > latest - pd.Timedelta(days=days)]
-    period_text = f"{days} days up to {latest:%d %B %Y}"
 
 if series.empty:
     st.warning("No measurements for this station in the selected period.")
@@ -259,15 +238,13 @@ if series.empty:
 
 # --- Snow depth ---
 st.markdown("##### Snow depth")
-st.caption(f"Total snow lying at the station, in cm. {period_text}.")
 
-line = series.rename(columns={"date": "Date", "HS": "Snow depth (cm)"})
-line["Snow depth (cm)"] = line["Snow depth (cm)"].astype("float64").round(1)
-st.line_chart(line.set_index("Date")["Snow depth (cm)"], height=260)
+line = series.rename(columns={"date": "Date", "HS": "Snow depth in cm"})
+line["Snow depth in cm"] = line["Snow depth in cm"].astype("float64").round(1)
+st.line_chart(line.set_index("Date")["Snow depth in cm"], height=260, y_label="Snow depth in cm")
 
 # --- New snow ---
 st.markdown("##### New snow per day")
-st.caption(f"Fresh snowfall in cm. {period_text}.")
 
 with st.expander("How is new snow per day calculated?"):
     st.markdown(
@@ -286,15 +263,15 @@ with st.expander("How is new snow per day calculated?"):
         "(https://www.slf.ch/en/snow/snowpack/snow-cover-modelling/)"
     )
 
-bars = series.rename(columns={"date": "Date", "HN_1D": "New snow (cm)"})
-bars["New snow (cm)"] = bars["New snow (cm)"].astype("float64").round(1)
-if bars["New snow (cm)"].notna().any():
-    st.bar_chart(bars.set_index("Date")["New snow (cm)"], height=200)
+bars = series.rename(columns={"date": "Date", "HN_1D": "New snow in cm"})
+bars["New snow in cm"] = bars["New snow in cm"].astype("float64").round(1)
+if bars["New snow in cm"].notna().any():
+    st.bar_chart(bars.set_index("Date")["New snow in cm"], height=200, y_label="New snow in cm")
 else:
     st.caption("**SLF publishes no new snow figure for this station in this period.**")
 
 # --- Air temperature ---
-st.markdown("##### Air temperature")
+st.markdown("##### Temperature")
 
 with st.expander("How is the daily temperature calculated?"):
     st.markdown(
@@ -328,28 +305,23 @@ temp_series = station_temp[
 if temp_series.empty:
     st.caption("No temperature data available for this station.")
 else:
-    above_zero = int((temp_series["TA_mean"] > 0).sum())
-    st.caption(
-        f"Daily mean, minimum and maximum in °C. The daily mean was above freezing "
-        f"on {above_zero} of {len(temp_series)} days in this period."
-    )
-
     long = temp_series.melt(
         id_vars="date",
         value_vars=["TA_max", "TA_mean", "TA_min"],
         var_name="Series",
-        value_name="Temperature (°C)",
+        value_name="Temperature in °C",
     )
     long["Series"] = long["Series"].map(
         {"TA_max": "Max", "TA_mean": "Mean", "TA_min": "Min"}
     )
-    long["Temperature (°C)"] = long["Temperature (°C)"].astype("float64").round(1)
+    long["Temperature in °C"] = long["Temperature in °C"].astype("float64").round(1)
     long = long.rename(columns={"date": "Date"})
 
     st.line_chart(
         long,
         x="Date",
-        y="Temperature (°C)",
+        y="Temperature in °C",
+        y_label="Temperature in °C",
         color="Series",
         height=240,
     )
