@@ -4,3 +4,4 @@ pyarrow>=26
 requests
 matplotlib
 scikit-learn
+statsmodels
