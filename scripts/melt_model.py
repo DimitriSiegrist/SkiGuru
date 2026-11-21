@@ -49,8 +49,8 @@ def full_calendar(snow):
     return pd.concat(parts, ignore_index=True)
 
 
-def training_days():
-    """Days without new snow, with everything the model needs."""
+def all_days():
+    """Every station and calendar day with everything the model needs."""
     snow = pd.read_parquet(SNOW)
     snow["station_code"] = snow["station_code"].astype(str)
     temp = load_temperature()
@@ -71,16 +71,21 @@ def training_days():
     stock = 0
     for k in range(21):
         stock = stock + KEEP**k * new_snow.groupby(station).shift(k).fillna(0)
+    days["stock"] = stock
     days["fresh"] = stock.groupby(station).shift(1)  # the model uses yesterday's stock
 
     # The stock is only reliable if new snow was reported on each of the last 11 days
     reported = days["HN_1D"].notna().astype(int)
-    snow_known = reported.groupby(station).rolling(11).sum().reset_index(level=0, drop=True) == 11
+    days["snow_known"] = reported.groupby(station).rolling(11).sum().reset_index(level=0, drop=True) == 11
 
     days["warmth"] = days["TA_mean"].clip(lower=0)
     days["sun"] = sun_index(days["date"])
     days["warm_sun"] = days["warmth"] * days["sun"]
+    return days
 
+
+def training_days(days):
+    """The days the model is fitted on: snow on the ground and no new snow."""
     keep = (
         days["decline"].notna()
         & days["TA_mean"].notna()
@@ -88,7 +93,7 @@ def training_days():
         & (days["HS_before"] >= MIN_DEPTH)
         & (days["HN_1D"] == 0)       # no new snow on the day itself
         & (days["HN_before"] == 0)   # and none the day before
-        & snow_known
+        & days["snow_known"]
         & (days["decline"].abs() <= MAX_CHANGE)
     )
     columns = ["station_code", "date", "hyear", "HS_before", "decline", "fresh", "warmth", "sun", "warm_sun"]
@@ -129,12 +134,62 @@ def compare(days):
     return pd.DataFrame(rows).set_index("model"), results
 
 
-if __name__ == "__main__":
-    days = training_days()
-    print(f"{len(days):,} days from {days['station_code'].nunique()} stations, "
-          f"{(days['hyear'] <= LAST_TRAINING_WINTER).sum():,} of them up to winter {LAST_TRAINING_WINTER}\n")
+def dry_spells(days, horizon):
+    """Rows that are followed by `horizon` days without new snow. The spells do not overlap."""
+    station = days["station_code"]
+    usable = (days["HN_1D"] == 0) & days["TA_mean"].notna() & (days["n"] >= MIN_READINGS)
+    ahead = sum(usable.groupby(station).shift(-k, fill_value=False) for k in range(1, horizon + 1))
+    measured_at_end = days.groupby(station)["HS"].shift(-horizon).notna()
+    candidates = days[(ahead == horizon) & (days["HS"] >= MIN_DEPTH) & days["snow_known"] & measured_at_end]
 
-    table, results = compare(days)
+    starts, free_from = [], {}
+    for row in candidates.itertuples():
+        if row.Index >= free_from.get(row.station_code, 0):
+            starts.append(row.Index)
+            free_from[row.station_code] = row.Index + horizon
+    return starts
+
+
+def check_forecasts(days, coefficients, horizon):
+    """Runs the forecast over real dry spells and compares it with what was measured."""
+    rows = []
+    for start in dry_spells(days, horizon):
+        spell = days.loc[start + 1 : start + horizon]
+        predicted = forecast(
+            days.at[start, "HS"], days.at[start, "stock"], spell["TA_mean"], spell["date"].iloc[0], coefficients
+        )
+        rows.append({
+            "hyear": days.at[start, "hyear"],
+            "start": days.at[start, "HS"],
+            "measured": spell["HS"].iloc[-1],
+            "predicted": predicted.iloc[-1],
+        })
+    return pd.DataFrame(rows)
+
+
+def summarise(spells):
+    """Forecast quality on the winters kept aside. Spells where both end at zero are trivial and left out."""
+    test = spells[(spells["hyear"] > LAST_TRAINING_WINTER) & ~((spells["measured"] == 0) & (spells["predicted"] == 0))]
+    error = test["predicted"] - test["measured"]
+    return {
+        "spells": len(test),
+        "mean loss (cm)": (test["start"] - test["measured"]).mean(),
+        "mean error (cm)": error.abs().mean(),
+        "bias (cm)": error.mean(),
+        "within 10 cm": (error.abs() <= 10).mean(),
+        "R2 of the loss": r_squared(test["start"] - test["measured"], test["start"] - test["predicted"]),
+        "10 % below (cm)": error.quantile(0.10),
+        "10 % above (cm)": error.quantile(0.90),
+    }
+
+
+if __name__ == "__main__":
+    days = all_days()
+    training = training_days(days)
+    print(f"{len(training):,} days from {training['station_code'].nunique()} stations, "
+          f"{(training['hyear'] <= LAST_TRAINING_WINTER).sum():,} of them up to winter {LAST_TRAINING_WINTER}\n")
+
+    table, results = compare(training)
     print(table.round(3).to_string())
 
     chosen = results[CHOSEN]
@@ -145,7 +200,8 @@ if __name__ == "__main__":
     COEFFICIENTS.write_text(json.dumps(chosen.params.round(5).to_dict(), indent=2) + "\n")
     print(f"\nSaved to {COEFFICIENTS.relative_to(BASE)}")
 
-    # A first look: 100 cm of old snow, two weeks at 5 degrees, starting on 15 April
-    example = forecast(100, 0, [5] * 14, "2026-04-15", load_coefficients())
-    print("\n100 cm on 14 April, then 5 degrees every day:")
-    print(example.round(1).iloc[[0, 6, 13]].to_string())
+    # The real test: forecasts over several days against what was measured
+    coefficients = load_coefficients()
+    quality = {f"{horizon} days": summarise(check_forecasts(days, coefficients, horizon)) for horizon in (7, 14, 21)}
+    print(f"\nForecasts over dry spells since winter {LAST_TRAINING_WINTER + 1}:")
+    print(pd.DataFrame(quality).round(2).to_string())
