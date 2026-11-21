@@ -2,7 +2,13 @@ import pandas as pd
 import pydeck as pdk
 import streamlit as st
 
-from src.data import load_bulletin, load_snow, load_stations, load_temperature
+from src.data import (
+    load_bulletin,
+    load_snow,
+    load_stations,
+    load_temperature,
+    load_temperature_live,
+)
 from src.style import setup_page
 
 setup_page("Snow History")
@@ -396,7 +402,10 @@ with st.expander("How is new snow per day calculated?"):
 
 bars = series.rename(columns={"date": "Date", "HN_1D": "New snow (cm)"})
 bars["New snow (cm)"] = bars["New snow (cm)"].astype("float64").round(1)
-st.bar_chart(bars.set_index("Date")["New snow (cm)"], height=200)
+if bars["New snow (cm)"].notna().any():
+    st.bar_chart(bars.set_index("Date")["New snow (cm)"], height=200)
+else:
+    st.caption("**SLF publishes no new snow figure for this station in this period.**")
 
 # --- Air temperature ---
 st.markdown("##### Air temperature")
@@ -417,10 +426,17 @@ with st.expander("How is the daily temperature calculated?"):
         "altogether. Readings are missing on about 7 per cent of days."
     )
 
-temp_series = temp[
-    (temp["station_code"] == selected)
-    & (temp["date"] >= series["date"].min())
-    & (temp["date"] <= series["date"].max())
+station_temp = temp[temp["station_code"] == selected]
+
+# The stored data is refreshed twice a week; the last days come live from the API
+live_temp = load_temperature_live(selected)
+if live_temp is not None:
+    station_temp = pd.concat([station_temp, live_temp], ignore_index=True)
+    station_temp = station_temp.drop_duplicates("date", keep="last")
+
+temp_series = station_temp[
+    (station_temp["date"] >= series["date"].min())
+    & (station_temp["date"] <= series["date"].max())
 ].sort_values("date")
 
 if temp_series.empty:
