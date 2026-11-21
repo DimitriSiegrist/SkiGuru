@@ -112,3 +112,16 @@
 - Shared passes: Parsenn and Jakobshorn are only sold together (same price); the three Jungfrau areas share one regional pass
 - Flat prices despite "dynamic pricing": Crans-Montana (79), Belalp (70), Saas-Fee (86), Grimentz (75) currently show the same online price every day → weekly re-scrapes (11.3) show whether they start to vary
 - Range across all resorts: CHF 30 (Arosa, early December) to CHF 122 (Zermatt International, Christmas)
+
+## Car for all resorts (task 13, 20 Nov 2026)
+- Parking: daily rate of the car park at (or nearest to) the valley station for every resort, as for Engelberg (`docs/car_parking.csv`)
+  - Reason: most car parks publish only a daily rate; for a ski day of 8–10 h, hourly or 12-h tariffs would be CHF 0–4 cheaper (e.g. Saas-Fee CHF 16 up to 12 h instead of CHF 20 per day; Belalp CHF 1.50/h, max CHF 16) → small next to K (CHF 35–170), same direction for all resorts, easy to explain
+- Shuttle to car-free resorts (Zermatt: train Täsch–Zermatt CHF 17.20 return, adult): stored as the full adult fare in `extra_chf_return` (`docs/car_parking.csv` → `data_clean/travel_car.csv`); the user's travel pass is applied in `src/finder.py` (task 15.2): GA → 0, Halbtax → 50 % (MGB: shuttle free with GA, half price with Half Fare)
+  - Reason: same logic as train mode (the travel pass lowers the user's fare); the CSV stays independent of the user
+- Winter-closed passes (task 13, 21 Nov 2026): ORS ignores seasonal closures and routed Aletsch and Belalp via the Gotthard tunnel and the Nufenen pass (closed in winter; Google Maps showed the closure) → ORS now avoids small boxes around the summits of Nufenen, Grimsel, Furka and Susten (`CLOSED_PASSES`, `avoid_polygons` in `scripts/travel_car.py`)
+  - Check against Google Maps (20 Nov, Friday evening traffic): ORS times within about ±25 min for all Valais resorts; Verbier, Crans-Montana, Grimentz via Lausanne (no car train)
+- Car trains: Leukerbad, Zermatt (Täsch), Saas-Fee, Belalp via Lötschberg (Kandersteg–Goppenstein), Aletsch Arena via Furka (Realp–Oberwald); route checked with ORS (`waycategory` ferry ≈ 17 km)
+  - Fares per car incl. passengers, single: Lötschberg CHF 28 Mon–Thu, CHF 31 Fri–Sun and public holidays (BLS, counter price; online CHF 2 cheaper, exact online prices not published); Furka CHF 33 every day (ADAC; MGB price page lists no car prices)
+  - Stored as return fares (same day out and back) in two columns, `car_train_chf_mon_thu` (Lötschberg 56, Furka 66) and `car_train_chf_fri_sun` (Lötschberg 62, Furka 66) in `docs/car_parking.csv` → `data_clean/travel_car.csv`; `k_car` stays without the car train; `src/finder.py` adds the fare matching the chosen date (task 15.2): Fri–Sun and public holidays on Mon–Thu (in the season only Easter Monday, 29 Mar 2027) → weekend fare
+  - Reason: the app knows the ski day, so the real price for that day is used instead of one assumed price per resort
+  - Car train fare kept separate from `extra_chf_return`: GA and Halbtax are not valid on car trains (BLS), but they are on the Zermatt shuttle → the travel-pass discount in `finder.py` must only apply to `extra_chf_return`

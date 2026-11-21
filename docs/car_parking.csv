@@ -1,2 +1,26 @@
-resort,parking_chf_day,parking_name,source_url,collected_on
-Engelberg-Titlis,10.00,Parking Talstation Engelberg-Titlis,https://www.parking.ch/en/parkings/engelberg/parking-talstation-engelberg-titlis,2026-11-16
+resort_id,resort,parking_name,park_lat,park_lon,parking_chf_day,extra_chf_return,extra_min_one_way,car_train_chf_mon_thu,car_train_chf_fri_sun,source_url,collected_on
+engelberg_titlis,Engelberg-Titlis,Parking Talstation Engelberg-Titlis,,,10.00,0,0,0,0,https://www.parking.ch/en/parkings/engelberg/parking-talstation-engelberg-titlis,2026-11-16
+zermatt_matterhorn_ski_paradise,Zermatt/Matterhorn Ski Paradise,Matterhorn Terminal Täsch,46.06868,7.77531,17.00,17.20,37,56.00,62.00,https://www.matterhorngotthardbahn.ch/en/winter/access/,2026-11-20
+saas_fee,Saas-Fee,Parkhaus Saas-Fee,46.110344,7.93236,20.00,0,10,56.00,62.00,https://www.saas-fee.ch/fileadmin/user_upload/documents/Parkingtarife-Winter-2025-26-EN.pdf,2026-11-20
+belalp,Belalp,Car park Blatten bei Naters,46.358346,7.984700,16.00,0,0,56.00,62.00,https://www.belalp.ch/en/poi/car-park-blatten-bei-naters,2026-11-20
+leukerbad,Leukerbad,Parkhaus Rathaus,,,14.00,0,0,56.00,62.00,https://www.parking.ch/en/parkings/leukerbad/parkhaus-rathaus,2026-11-21
+aletsch_arena,Aletsch Arena,Parking Aletsch Mörel,,,11.00,0,0,66.00,66.00,https://www.parking.ch/en/parkings/moerel-filet/parking-aletsch,2026-11-21
+flims_laax_falera,Flims Laax Falera,Parkhaus Laax Murschetg,,,32.80,0,0,0,0,https://www.laax.com/en/transportation,2026-11-21
+toggenburg_chaeserrugg,Toggenburg (Chäserrugg),Parking Talstation Unterwasser,,,6.00,0,0,0,0,https://www.chaeserrugg.ch,2026-11-21
+verbier_4_vallees,Verbier/4 Vallées,Parking Périn,,,0,0,0,0,0,https://www.verbier.ch/en/practice/shop-stores-and-boutique/perin-parking-verbier-en-2923551/,2026-11-21
+grimentz_zinal,Grimentz-Zinal,Parking Grimentz,,,10.00,0,0,0,0,https://www.valdanniviers.ch/fr/Z15461/parkings-publics,2026-11-21
+adelboden_lenk,Adelboden-Lenk,Parking P1 Talstation Oey,,,5.00,0,0,0,0,https://adelboden-lenk-kandersteg.ch/en/places/poi/detail/vogellisiberg-adelboden,2026-11-21
+crans_montana,Crans-Montana,Parking Talstation Crans-Cry d'Er,,,32.00,0,0,0,0,https://www.parking.ch/en/parkings/crans-montana/parking-talstation-crans-cry-d-er,2026-11-21
+savognin,Savognin,Parking at the lake (100 m from valley station),,,0,0,0,0,0,https://www.skiresort.com/en/ski-resort/savognin/test-result/arrival-parking/,2026-11-21
+flumserberg,Flumserberg,Parking Tannenboden,,,8.00,0,0,0,0,https://flumserberg.ch/parking,2026-11-21
+hoch_ybrig,Hoch-Ybrig,Parking Weglosen,,,0,0,0,0,0,https://www.skiresort.com/en/ski-resort/hoch-ybrig-unteriberg-oberiberg/test-result/arrival-parking/,2026-11-21
+stoos,Stoos,Parking Talstation Schwyz-Stoos,,,13.00,0,0,0,0,https://www.stoos.ch/en/pages/prices-parking,2026-11-21
+arosa_lenzerheide,Arosa Lenzerheide,Parkplatz Rothorn,,,8.00,0,0,0,0,https://arosalenzerheide.swiss/en/Region/Infrastructure/Parking-lot-Rothorn_isd_14579466,2026-11-21
+andermatt_sedrun,Andermatt-Sedrun,Parking P1/P2 Andermatt station,,,9.00,0,0,0,0,https://www.andermatt-sedrun-disentis.ch/en/service-providers/andermatt-center,2026-11-21
+davos_klosters_parsenn,Davos Klosters – Parsenn,Parking Parsenn,,,9.00,0,0,0,0,https://davosklostersmountains.ch/en/mountains/recent-news/company/e-mobility,2026-11-21
+davos_klosters_jakobshorn,Davos Klosters – Jakobshorn,Parking Talstation Jakobshorn,,,9.00,0,0,0,0,https://davosklostersmountains.ch/en/mountains/recent-news/company/e-mobility,2026-11-21
+davos_klosters_rinerhorn,Davos Klosters – Rinerhorn,Parking Talstation Rinerhorn,,,5.00,0,0,0,0,https://davosklostersmountains.ch/en/mountains/recent-news/company/e-mobility,2026-11-21
+davos_klosters_madrisa,Davos Klosters – Madrisa,Parking Talstation Madrisa,,,5.00,0,0,0,0,https://www.madrisa.ch/en/winter/information/arrival-parking,2026-11-21
+jungfrau_kleine_scheidegg_maennlichen,Jungfrau – Kleine Scheidegg/Männlichen,Parkhaus Grindelwald Terminal,,,15.00,0,0,0,0,https://www.jungfrau.ch/en-gb/arrival-at-station-car-parks/car-park-grindelwald-terminal/,2026-11-21
+jungfrau_first,Jungfrau – First,Parkhaus Grindelwald Eiger+,,,20.00,0,0,0,0,https://www.jungfrau.ch/de-ch/anreise-bahnhoefe-parking/parkieren/parkhaus-grindelwald-eiger/,2026-11-21
+jungfrau_schilthorn_muerren,Jungfrau – Schilthorn/Mürren,Parkhaus Stechelberg,,,8.00,0,0,0,0,https://www.jungfrau.ch/en-gb/arrival-at-station-car-parks/parking-lot-stechelberg/,2026-11-21
