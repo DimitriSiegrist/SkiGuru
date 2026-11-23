@@ -21,6 +21,12 @@ RESORT = "Engelberg-Titlis"
 dates = sorted(data.dropna(subset=["price"])["date"].unique())
 first, last = dt.date.fromisoformat(dates[0]), dt.date.fromisoformat(dates[-1])
 
+# share the resort's snow station with the snow pages (same key as pages 1 and 2);
+# only when the finder's resort changes, so a station picked on a snow page is not overwritten
+if st.session_state.get("finder_resort") != RESORT:
+    st.session_state.finder_resort = RESORT
+    st.session_state.station = data.loc[data["resort"] == RESORT, "station_code"].iloc[0]
+
 # --- inputs ---
 c1, c2, c3, c4 = st.columns(4)
 day = c1.date_input("Ski day", value=first, min_value=first, max_value=last)
