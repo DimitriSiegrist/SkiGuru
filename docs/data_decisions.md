@@ -130,3 +130,13 @@
   - Stored as return fares (same day out and back) in two columns, `car_train_chf_mon_thu` (Lötschberg 56, Furka 66) and `car_train_chf_fri_sun` (Lötschberg 62, Furka 66) in `docs/car_parking.csv` → `data_clean/travel_car.csv`; `k_car` stays without the car train; `src/finder.py` adds the fare matching the chosen date (task 15.2): Fri–Sun and public holidays on Mon–Thu (in the season only Easter Monday, 29 Mar 2027) → weekend fare
   - Reason: the app knows the ski day, so the real price for that day is used instead of one assumed price per resort
   - Car train fare kept separate from `extra_chf_return`: GA and Halbtax are not valid on car trains (BLS), but they are on the Zermatt shuttle → the travel-pass discount in `finder.py` must only apply to `extra_chf_return`
+
+## Snow for all resorts (task 14, 23 Nov 2026)
+- Matching rule (replaces "nearest station" from 8.5): nearest IMIS snow station (`type == "snow"`) to the valley station that is ≤ 15 km away, has measured since 2016 or earlier (≥ 10 winters for the median) and lies at ski-area altitude (≥ 1800 m, or top altitude − 300 m for low resorts); if no station fulfils all rules, the altitude rule is dropped, then the nearest station is taken → column `match_rule` in `data_clean/resort_stations.csv`
+- Result: 22 resorts fulfil all rules; Toggenburg and Flumserberg without the altitude rule (AMD2 Bärenfall, 1610 m, 12.6 / 13.3 km); Arosa Lenzerheide = nearest (ROT3 Plang Bi, data only since 2018 → median from 8 winters)
+- Changes vs. nearest station: Davos Parsenn SLF2 → WFJ2 Weissfluhjoch and Jakobshorn SLF2 → DAV3 Hanengretji (SLF2 at 1563 m is in the valley); Andermatt GOS3 → URS2 Giltnasen (GOS3 only since 2021); Flumserberg ENG2 → AMD2 Bärenfall (ENG2 only since 2019)
+- Shared stations → identical snow values: Aletsch Arena / Belalp (BEL2), Jakobshorn / Rinerhorn (DAV3), Toggenburg / Flumserberg (AMD2) → snow cannot separate these pairs
+- Checks (23 Nov): 25 resorts × 151 days, no missing values; all stations with data up to 22 Nov except OTT2 Ottere (Adelboden, last value 30 Oct) → check again mid-December; alternative FAE2 Färmel (1971 m, 6.2 km, since 1997)
+- Expected snow depth on 15 Jan: 62–189 cm; most at the northern Alpine rim and in western Valais (Stoos, Crans-Montana, Leukerbad), less in inner Valais (Saas-Fee 82 cm) → precipitation matters more than altitude
+- Cap 150 cm: Stoos, Crans-Montana and Leukerbad all at x_snow_depth = 1 on 15 Jan → snow depth does not separate the snowiest resorts; revisit in task 16
+- Merge key `resort_id` added to both snow tables (`resort` kept as readable name); `src/finder.py` switches to `resort_id` in task 15.1

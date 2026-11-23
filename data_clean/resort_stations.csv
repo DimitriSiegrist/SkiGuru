@@ -1,26 +1,26 @@
-resort,station_code,station_name,station_alt,dist_km
-Engelberg-Titlis,TIT2,Titlisboden,2149.0,3.5
-Flims Laax Falera,CMA2,La Fuorcla,2325.0,6.9
-Toggenburg (Chäserrugg),AMD2,Bärenfall,1610.0,12.6
-Verbier/4 Vallées,ATT2,Lac des Vaux,2550.0,3.1
-Zermatt/Matterhorn Ski Paradise,ZER2,Triftchumme,2752.0,3.3
-Grimentz-Zinal,ANV2,Orzival,2640.0,3.3
-Adelboden-Lenk,OTT2,Ottere,2017.0,5.8
-Crans-Montana,VDS2,Donin du Jour,2385.0,7.8
-Aletsch Arena,BEL2,Belalp,2554.0,7.0
-Belalp,BEL2,Belalp,2554.0,2.6
-Leukerbad,TRU2,Trubelboden,2459.0,3.4
-Savognin,PMA2,Colms da Parsonz,2429.0,4.5
-Flumserberg,ENG2,Fitteren,2162.0,13.2
-Hoch-Ybrig,YBR2,Wanne,1701.0,3.8
-Stoos,MUO2,Rupperslaui,2083.0,8.1
-Saas-Fee,SAA4,Gibidum,2680.0,2.7
-Arosa Lenzerheide,ROT3,Plang Bi,2495.0,3.7
-Andermatt-Sedrun,GOS3,Gütsch,2209.0,2.3
-Davos Klosters – Parsenn,SLF2,Davos Stilli (SLF),1563.0,0.9
-Davos Klosters – Jakobshorn,SLF2,Davos Stilli (SLF),1563.0,3.1
-Davos Klosters – Rinerhorn,DAV3,Hanengretji,2455.0,4.8
-Davos Klosters – Madrisa,KLO2,Madrisa,2147.0,2.8
-Jungfrau – Kleine Scheidegg/Männlichen,MAE2,Itramen,2162.0,5.8
-Jungfrau – First,FIR2,Schmidigen-Bidmeren,2111.0,5.2
-Jungfrau – Schilthorn/Mürren,LHO2,Russisprung,2150.0,4.5
+resort_id,resort,station_code,station_name,station_alt,dist_km,station_start_year,match_rule
+engelberg_titlis,Engelberg-Titlis,TIT2,Titlisboden,2149.0,3.5,1993,distance + record + altitude
+flims_laax_falera,Flims Laax Falera,CMA2,La Fuorcla,2325.0,6.9,1993,distance + record + altitude
+toggenburg_chaeserrugg,Toggenburg (Chäserrugg),AMD2,Bärenfall,1610.0,12.6,1997,distance + record
+verbier_4_vallees,Verbier/4 Vallées,ATT2,Lac des Vaux,2550.0,3.1,1993,distance + record + altitude
+zermatt_matterhorn_ski_paradise,Zermatt/Matterhorn Ski Paradise,ZER2,Triftchumme,2752.0,3.3,1998,distance + record + altitude
+grimentz_zinal,Grimentz-Zinal,ANV2,Orzival,2640.0,3.3,1997,distance + record + altitude
+adelboden_lenk,Adelboden-Lenk,OTT2,Ottere,2017.0,5.8,1997,distance + record + altitude
+crans_montana,Crans-Montana,VDS2,Donin du Jour,2385.0,7.8,1998,distance + record + altitude
+aletsch_arena,Aletsch Arena,BEL2,Belalp,2554.0,7.0,2008,distance + record + altitude
+belalp,Belalp,BEL2,Belalp,2554.0,2.6,2008,distance + record + altitude
+leukerbad,Leukerbad,TRU2,Trubelboden,2459.0,3.4,1996,distance + record + altitude
+savognin,Savognin,PMA2,Colms da Parsonz,2429.0,4.5,1993,distance + record + altitude
+flumserberg,Flumserberg,AMD2,Bärenfall,1610.0,13.3,1997,distance + record
+hoch_ybrig,Hoch-Ybrig,YBR2,Wanne,1701.0,3.8,2006,distance + record + altitude
+stoos,Stoos,MUO2,Rupperslaui,2083.0,8.1,2006,distance + record + altitude
+saas_fee,Saas-Fee,SAA4,Gibidum,2680.0,2.7,2009,distance + record + altitude
+arosa_lenzerheide,Arosa Lenzerheide,ROT3,Plang Bi,2495.0,3.7,2018,nearest
+andermatt_sedrun,Andermatt-Sedrun,URS2,Giltnasen,2169.0,8.4,1997,distance + record + altitude
+davos_klosters_parsenn,Davos Klosters – Parsenn,WFJ2,Weissfluhjoch,2536.0,3.2,1992,distance + record + altitude
+davos_klosters_jakobshorn,Davos Klosters – Jakobshorn,DAV3,Hanengretji,2455.0,3.7,1998,distance + record + altitude
+davos_klosters_rinerhorn,Davos Klosters – Rinerhorn,DAV3,Hanengretji,2455.0,4.8,1998,distance + record + altitude
+davos_klosters_madrisa,Davos Klosters – Madrisa,KLO2,Madrisa,2147.0,2.8,1996,distance + record + altitude
+jungfrau_kleine_scheidegg_maennlichen,Jungfrau – Kleine Scheidegg/Männlichen,MAE2,Itramen,2162.0,5.8,1994,distance + record + altitude
+jungfrau_first,Jungfrau – First,FIR2,Schmidigen-Bidmeren,2111.0,5.2,1998,distance + record + altitude
+jungfrau_schilthorn_muerren,Jungfrau – Schilthorn/Mürren,LHO2,Russisprung,2150.0,4.5,2001,distance + record + altitude
