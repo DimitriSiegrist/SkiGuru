@@ -28,6 +28,30 @@ def load_data():
     }
 
 
+def merge_tables(data):
+    """One row per resort and date: attributes, train, car (per resort) + snow, price (per day)."""
+    # prices: the scraper appends every week → keep the latest scrape per resort and date
+    prices = (data["prices"].sort_values("scraped_on")
+              .drop_duplicates(["resort_id", "date"], keep="last")
+              [["resort_id", "date", "price", "source", "scraped_on"]]
+              .rename(columns={"source": "price_source"}))
+    snow = data["snow"][["resort_id", "date", "station_code", "HS_exp", "HN3_exp",
+                         "x_snow_depth", "x_new_snow"]]
+    # snow covers all 151 days (1 Dec–30 Apr); days without a price (resort closed) keep price = NaN
+    daily = snow.merge(prices, on=["resort_id", "date"], how="left", validate="1:1")
+
+    train = data["train"][["resort_id", "t_round_min", "fare_full_return", "fare_halbtax_return"]]
+    car = data["car"][["resort_id", "t_round_min", "k_car",
+                       "car_train_chf_mon_thu", "car_train_chf_fri_sun"]]
+    static = (data["attrs"].drop(columns=["source_url", "collected_on"])
+              .merge(train.rename(columns={"t_round_min": "t_train_min"}),
+                     on="resort_id", validate="1:1")
+              .merge(car.rename(columns={"t_round_min": "t_car_min"}),
+                     on="resort_id", validate="1:1"))
+
+    return static.merge(daily, on="resort_id", how="left", validate="1:m")
+
+
 def scale(x, lo, hi):
     """Scale to 0–1 with a fixed range, clipped at 0 and 1; missing values → 0.5 (neutral)."""
     if pd.isna(x):
