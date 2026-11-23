@@ -117,3 +117,15 @@ def consumer_surplus(df, date, B0=150, v=20, mode="train", travel_pass="Halbtax"
         "B": B.round(2), "P": d["price"], "K": K.round(2), "T_h": T.round(2),
         "vT": (v * T).round(2), "CS": (B - d["price"] - K - v * T).round(2),
     }).reset_index(drop=True)
+
+
+def rank_resorts(cs, budget=None):
+    """Ranking by CS (highest first) of the output of consumer_surplus().
+    Drops resorts without a price on that date; budget filter on the money spent,
+    P + K ≤ budget (v·T is not paid out of pocket). budget=None → no filter."""
+    r = cs.dropna(subset=["P"])
+    if budget is not None:
+        r = r[r["P"] + r["K"] <= budget]
+    r = r.sort_values("CS", ascending=False).reset_index(drop=True)
+    r.insert(0, "rank", range(1, len(r) + 1))
+    return r

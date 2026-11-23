@@ -159,3 +159,13 @@
 - Travel pass in car mode: `PASS_DISCOUNT` (GA 100 %, Halbtax 50 %) is subtracted from `extra_chf_return` (Zermatt shuttle Täsch–Zermatt), which is already in `k_car`; the car train stays at full price → the travel-pass input on page 3 is now active in car mode too
 - Train mode unchanged: stored sbb.ch fares (`fare_full_return`, `fare_halbtax_return`, GA = 0), not `PASS_DISCOUNT`, to keep the sbb.ch rounding
 - Default weight for the difficulty mix: CHF 10 (decided in task 9), added to `DEFAULT_WEIGHTS`
+
+## Budget filter and ranking (task 15.3, 23 Nov 2026)
+- `rank_resorts()` in `src/finder.py`: budget filter on the money spent, P + K ≤ budget; the time cost v·T is not counted
+  - Reason: the budget is what the user can pay out of pocket; v·T is an opportunity cost, not a payment (it still enters the CS)
+- Resorts without a price on the chosen date (outside their season) are dropped from the ranking; page 3 can list them separately with `cs[cs["P"].isna()]` (task 17.5)
+- Resorts with negative CS stay in the ranking (sorted last); whether they are shown as "not worth the trip" is decided in 17.2
+
+## Test of the CS module (task 15.4, 23 Nov 2026)
+- `tests/test_finder.py`: 3 made-up resorts with values at the top, middle and bottom of every fixed reference range, so x̃ = 1, 0.5, 0 and B, K, v·T and CS can be calculated by hand; covers train and car (car train by weekday, Easter Monday, shuttle discount by travel pass), the budget filter and a missing price → all pass
+- Made-up data instead of real resorts: real values give x̃ with many decimals, so a hand calculation would only check the code against itself; the toy values make every expected number exact
