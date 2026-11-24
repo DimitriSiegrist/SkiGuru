@@ -2,7 +2,8 @@ import datetime as dt
 
 import streamlit as st
 
-from src.finder import consumer_surplus, load_data, merge_tables
+from src.finder import (DEFAULT_IMPORTANCE, DEFAULT_TOTAL, consumer_surplus, load_data,
+                        merge_tables, weights_from_importance)
 from src.style import setup_page
 
 setup_page("Resort Finder")
@@ -27,17 +28,35 @@ if st.session_state.get("finder_resort") != RESORT:
     st.session_state.finder_resort = RESORT
     st.session_state.station = data.loc[data["resort"] == RESORT, "station_code"].iloc[0]
 
-# --- inputs ---
-c1, c2, c3, c4 = st.columns(4)
-day = c1.date_input("Ski day", value=first, min_value=first, max_value=last)
-mode = c2.radio("Travel", ["train", "car"], horizontal=True)
-travel_pass = c3.selectbox("Travel pass", ["none", "Halbtax", "GA"], index=1)
-v = c4.number_input("Value of time (CHF per hour)", min_value=0, max_value=200, value=20, step=5)
-B0 = st.slider("What is a ski day as such worth to you? (B₀, CHF)", 0, 400, 150, step=10)
+# --- sidebar inputs (task 17.1) ---
+with st.sidebar:
+    st.header("Your ski day")
+    st.caption("Start point: Zürich HB")
+    day = st.date_input("Ski day", value=first, min_value=first, max_value=last)
+    mode = st.radio("Travel", ["train", "car"], horizontal=True)
+    travel_pass = st.selectbox("Travel pass", ["none", "Halbtax", "GA"], index=1)
+    v = st.number_input("Value of time (CHF per hour)", min_value=0, max_value=200, value=20, step=5)
+    use_budget = st.checkbox("Set a budget")
+    budget = st.number_input("Budget for day pass + travel (CHF)", min_value=0, max_value=500,
+                             value=150, step=10, disabled=not use_budget)
+    budget = budget if use_budget else None   # None → no filter in rank_resorts()
+    B0 = st.slider("What is a ski day as such worth to you? (B₀, CHF)", 0, 400, 150, step=10)
+
+    st.header("What matters to you")
+    level = st.radio("Your level", ["beginner", "intermediate", "expert"], index=1, horizontal=True)
+    total = st.number_input("How much more is a day at your ideal resort worth than at the most basic one? (CHF)",
+                            min_value=0, max_value=1000, value=DEFAULT_TOTAL, step=10)
+    st.caption("Importance: 0 = not important … 5 = very important")
+    LABELS = {"piste_km": "Piste km", "vertical_drop": "Vertical drop", "top_alt": "Top altitude",
+              "snowmaking_share": "Snowmaking", "difficulty": "Pistes at your level",
+              "x_snow_depth": "Snow depth", "x_new_snow": "New snow",
+              "rating_family": "Family friendly", "rating_freeride": "Freeride", "rating_park": "Snow park"}
+    importance = {k: st.slider(label, 0, 5, DEFAULT_IMPORTANCE[k]) for k, label in LABELS.items()}
 
 # --- result ---
-r = consumer_surplus(data, day.isoformat(), B0=B0, v=v, mode=mode,
-                     travel_pass=travel_pass).set_index("resort").loc[RESORT]
+weights = weights_from_importance(importance, total)
+r = consumer_surplus(data, day.isoformat(), B0=B0, v=v, mode=mode, travel_pass=travel_pass,
+                     level=level, weights=weights).set_index("resort").loc[RESORT]
 
 st.subheader(RESORT)
 m1, m2, m3, m4, m5 = st.columns(5)
