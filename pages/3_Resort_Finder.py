@@ -4,7 +4,7 @@ import altair as alt
 import pandas as pd
 import streamlit as st
 
-from src.finder import (DEFAULT_IMPORTANCE, DEFAULT_TOTAL, LEVEL_KM, benefit, consumer_surplus,
+from src.finder import (DEFAULT_IMPORTANCE, DEFAULT_TOTAL, LEVEL_KM, ROOT, benefit, consumer_surplus,
                         load_data, merge_tables, rank_resorts, scaled_attributes,
                         weights_from_importance)
 from src.style import setup_page
@@ -112,6 +112,7 @@ if st.session_state.get("finder_resort") != sel["resort"]:
     st.session_state.finder_resort = sel["resort"]
     st.session_state.station = data.loc[data["resort_id"] == sel["resort_id"], "station_code"].iloc[0]
 
+
 st.subheader(f"{sel['rank']}. {sel['resort']}")
 m1, m2, m3, m4, m5 = st.columns(5)
 m1.metric("Benefit B", f"CHF {sel['B']:.0f}")
@@ -152,6 +153,56 @@ labels = alt.Chart(steps).mark_text(align="left", dx=6, color="#333333").encode(
 zero = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color="#999999").encode(x="x:Q")
 st.altair_chart((bars + labels + zero).properties(height=220))
 
+
+# snow outlook for the selected resort (task 17.4): expected snow depth over the season at its station
+stn = pd.read_csv(ROOT / "data_clean" / "resort_stations.csv").set_index("resort_id").loc[sel["resort_id"]]
+season = data.loc[data["resort_id"] == sel["resort_id"], ["date", "HS_exp"]].copy()
+season["date"] = pd.to_datetime(season["date"])
+ski_day = season[season["date"] == pd.Timestamp(day)]
+
+st.markdown("##### Snow outlook")
+st.caption(f"Expected snow depth (historical values) at {stn['station_name']} ({stn['station_code']}, "
+           f"{stn['station_alt']:.0f} m, {stn['dist_km']:.1f} km from the resort); dashed line = your ski day.")
+base = alt.Chart(season).encode(x=alt.X("date:T", title=None, axis=alt.Axis(format="%b")))
+line = base.mark_line(color="#4a4a4a", strokeWidth=2).encode(
+    y=alt.Y("HS_exp:Q", title="Snow depth (cm)"))
+nearest = alt.selection_point(fields=["date"], nearest=True, on="mouseover", empty=False)
+picker = base.mark_rule(opacity=0).encode(
+    tooltip=[alt.Tooltip("date:T", title="Date", format="%-d %B"),
+             alt.Tooltip("HS_exp:Q", title="Snow depth (cm)", format=".0f")]).add_params(nearest)
+hover = base.mark_circle(size=60, color="#4a4a4a").encode(y="HS_exp:Q").transform_filter(nearest)
+rule = alt.Chart(ski_day).mark_rule(color="#999999", strokeDash=[4, 4]).encode(x="date:T")
+dot = alt.Chart(ski_day).mark_point(filled=True, size=90, color="#111111").encode(x="date:T", y="HS_exp:Q")
+st.altair_chart((line + picker + hover + rule + dot).properties(height=220))
+
+l1, l2 = st.columns(2)
+l1.page_link("pages/1_Snow_History.py", label="Snow History: past winters at this station")
+l2.page_link("pages/2_Snow_Future.py", label="Snow Future: melt over the next 3 weeks")
+
+
+# price against travel time for all open resorts on that day (task 17.4)
+sc = table.assign(status=table["worth"].map({True: "worth the trip", False: "not worth it"}))
+STATUS = alt.Scale(domain=["worth the trip", "not worth it"], range=["#111111", "#b5b5b5"])
+SHAPES = alt.Scale(domain=["worth the trip", "not worth it"], range=["circle", "triangle-down"])
+points = alt.Chart(sc).mark_point(filled=True, size=90).encode(
+    x=alt.X("T_h:Q", title="Travel time, round trip (h)"),
+    y=alt.Y("P:Q", title="Day pass (CHF)", scale=alt.Scale(zero=False)),
+    color=alt.Color("status:N", title=None, scale=STATUS),
+    shape=alt.Shape("status:N", title=None, scale=SHAPES),
+    tooltip=[alt.Tooltip("resort:N", title="Resort"), alt.Tooltip("rank:Q", title="Rank"),
+             alt.Tooltip("P:Q", title="Day pass (CHF)", format=".2f"),
+             alt.Tooltip("T_h:Q", title="Travel time (h)", format=".1f"),
+             alt.Tooltip("CS:Q", title="CS (CHF)", format=".0f")],
+)
+chosen = sc[sc["resort_id"] == sel["resort_id"]]
+ring = alt.Chart(chosen).mark_point(size=300, color="#111111", strokeWidth=2).encode(x="T_h:Q", y="P:Q")
+name = alt.Chart(chosen).mark_text(align="left", dx=12, dy=-10, color="#333333").encode(
+    x="T_h:Q", y="P:Q", text="resort:N")
+
+st.subheader("Price and travel time")
+st.altair_chart((points + ring + name).properties(height=320))
+st.caption(f"Resorts open on {day.day} {day:%B %Y}. Hover over a point for details; "
+           "the circled point is the resort selected in the ranking.")
 
 # breakdown per attribute (task 17.3): raw value → x̃ → w → w·x̃, same functions as the ranking
 row = data[(data["resort_id"] == sel["resort_id"]) & (data["date"] == day.isoformat())]
