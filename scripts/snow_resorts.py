@@ -17,7 +17,7 @@ OUT_STATIONS = ROOT / "data_clean" / "resort_stations.csv"
 OUT_SNOW = ROOT / "data_clean" / "snow_expected.csv"
 
 SEASON = pd.date_range("2026-12-01", "2027-04-30", freq="D")
-HS_CAP = 150      # cm snow depth → score 1
+HS_CAP = 200      # cm snow depth → score 1
 HN_CAP = 30       # cm new snow in 3 days → score 1
 HN_MAX_DAY = 100  # cm new snow in one day above this = measurement error
 MAX_KM = 15            # station at most 15 km from the valley station

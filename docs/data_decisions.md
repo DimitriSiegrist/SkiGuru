@@ -169,3 +169,14 @@
 ## Test of the CS module (task 15.4, 23 Nov 2026)
 - `tests/test_finder.py`: 3 made-up resorts with values at the top, middle and bottom of every fixed reference range, so x̃ = 1, 0.5, 0 and B, K, v·T and CS can be calculated by hand; covers train and car (car train by weekday, Easter Monday, shuttle discount by travel pass), the budget filter and a missing price → all pass
 - Made-up data instead of real resorts: real values give x̃ with many decimals, so a hand calculation would only check the code against itself; the toy values make every expected number exact
+
+## Default weights and snow depth cap (task 16, 24 Nov 2026)
+- Sanity check with defaults (train, Halbtax, v = CHF 20/h, intermediate) on Sat 12 Dec, Fri 15 Jan, Sat 13 Feb, Sat 13 Mar: same order on all dates, close resorts on top, Valais last; spread across resorts B ≈ CHF 65, P ≈ CHF 75, K + v·T ≈ CHF 195 → travel decides the ranking with the default weights (CHF 135 best vs. worst on every attribute)
+- Expected snow moves B by CHF 6–17 over the season but for all resorts together → the date shifts the level of B, not the order
+- Weights from user input (task 17.1): importance slider per attribute 0 = not important … 5 = very important plus a total willingness to pay (ideal vs. most basic resort, CHF); w_k = total × importance_k / Σ importance; all sliders at 0 → all weights 0 (B = B₀)
+- Snow depth cap raised from 150 to 200 cm (`HS_CAP` in `scripts/snow_resorts.py`, `snow_expected.csv` re-generated)
+  - With 150 cm: 13 of 25 resorts capped on 13 Feb, 18 on 13 Mar → snow depth hardly separates resorts in peak season
+  - With 200 cm: 3 (Feb) and 6 (Mar) capped, largest spread Jan–Mar (CHF 13.5–17 at weight 25); 250 cm caps almost none but squeezes Dec/Jan (spread CHF 7.2 on 12 Dec)
+  - Reason for 200 cm: above ~2 m base more snow barely improves piste skiing (benefit levels off); station snow, not piste snow, so differences above 2 m are uncertain anyway
+  - Supersedes the 150 cm cap in task 8.5/14 (entries above)
+
