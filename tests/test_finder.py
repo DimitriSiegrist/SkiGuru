@@ -2,7 +2,8 @@
 
 Three made-up resorts on Fri 15 Jan 2027, chosen so that every scaled value is easy:
 A = top of every reference range (x̃ = 1), B = middle (x̃ = 0.5), C = bottom (x̃ = 0),
-except C's park rating, which is missing → neutral 0.5.
+except C's park rating, which is missing → neutral 0.5 (weight 0 by default, so it doesn't count).
+Default weights (task 16.4): 7 core attributes at 250 × 3/21 each, ratings 0 → B = 150 + 250 · x̃.
 
 Run from the repo root:  python -m pytest tests   (or: python tests/test_finder.py)
 """
@@ -19,8 +20,8 @@ def toy(date="2027-01-15"):
     """Same columns as merge_tables(), three resorts, one date."""
     return pd.DataFrame({
         "resort_id": ["a", "b", "c"], "resort": ["A", "B", "C"], "date": [date] * 3,
-        # RANGES: piste km 25–425, lifts 5–70, vertical drop 600–2400 m, top 1800–3900 m
-        "piste_km": [425, 225, 25], "lifts": [70, 37.5, 5],
+        # RANGES: piste km 25–425, vertical drop 600–2400 m, top 1800–3900 m
+        "piste_km": [425, 225, 25],
         "vertical_drop": [2400, 1500, 600], "top_alt": [3900, 2850, 1800],
         "snowmaking_share": [1, 0.5, 0],
         "rating_family": [5, 3, 1], "rating_freeride": [5, 3, 1], "rating_park": [5, 3, None],
@@ -39,18 +40,18 @@ def toy(date="2027-01-15"):
 
 def test_train():
     cs = consumer_surplus(toy(), "2027-01-15")   # train, Halbtax, B0 = 150, v = 20
-    assert cs["B"].tolist() == [275, 212.5, 152.5]
+    assert cs["B"].tolist() == [400, 275, 150]
     assert cs["K"].tolist() == [50, 30, 20]
     assert cs["vT"].tolist() == [80, 60, 40]
-    assert cs["CS"].tolist() == [55, 62.5, 52.5]
-    assert rank_resorts(cs)["resort"].tolist() == ["B", "A", "C"]
+    assert cs["CS"].tolist() == [180, 125, 50]
+    assert rank_resorts(cs)["resort"].tolist() == ["A", "B", "C"]
 
 
 def test_car():
     cs = consumer_surplus(toy(), "2027-01-15", mode="car")   # Friday → weekend car-train fare
     assert cs["K"].tolist() == [122, 50, 30]
     assert cs["vT"].tolist() == [60, 40, 30]
-    assert cs["CS"].tolist() == [3, 62.5, 52.5]
+    assert cs["CS"].tolist() == [128, 125, 50]
     # Thursday → weekday fare; Easter Monday → weekend fare; GA → shuttle free
     assert consumer_surplus(toy("2027-01-14"), "2027-01-14", mode="car")["K"][0] == 116
     assert consumer_surplus(toy("2027-03-29"), "2027-03-29", mode="car")["K"][0] == 122

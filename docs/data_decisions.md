@@ -169,3 +169,24 @@
 ## Test of the CS module (task 15.4, 23 Nov 2026)
 - `tests/test_finder.py`: 3 made-up resorts with values at the top, middle and bottom of every fixed reference range, so x̃ = 1, 0.5, 0 and B, K, v·T and CS can be calculated by hand; covers train and car (car train by weekday, Easter Monday, shuttle discount by travel pass), the budget filter and a missing price → all pass
 - Made-up data instead of real resorts: real values give x̃ with many decimals, so a hand calculation would only check the code against itself; the toy values make every expected number exact
+
+## Default weights and snow depth cap (task 16, 24 Nov 2026)
+- Sanity check with defaults (train, Halbtax, v = CHF 20/h, intermediate) on Sat 12 Dec, Fri 15 Jan, Sat 13 Feb, Sat 13 Mar: same order on all dates, close resorts on top, Valais last; spread across resorts B ≈ CHF 65, P ≈ CHF 75, K + v·T ≈ CHF 195 → travel decides the ranking with the default weights (CHF 135 best vs. worst on every attribute)
+- Expected snow moves B by CHF 6–17 over the season but for all resorts together → the date shifts the level of B, not the order
+- Weights from user input (task 17.1): importance slider per attribute 0 = not important … 5 = very important plus a total willingness to pay (ideal vs. most basic resort, CHF); w_k = total × importance_k / Σ importance; all sliders at 0 → all weights 0 (B = B₀)
+- Snow depth cap raised from 150 to 200 cm (`HS_CAP` in `scripts/snow_resorts.py`, `snow_expected.csv` re-generated)
+  - With 150 cm: 13 of 25 resorts capped on 13 Feb, 18 on 13 Mar → snow depth hardly separates resorts in peak season
+  - With 200 cm: 3 (Feb) and 6 (Mar) capped, largest spread Jan–Mar (CHF 13.5–17 at weight 25); 250 cm caps almost none but squeezes Dec/Jan (spread CHF 7.2 on 12 Dec)
+  - Reason for 200 cm: above ~2 m base more snow barely improves piste skiing (benefit levels off); station snow, not piste snow, so differences above 2 m are uncertain anyway
+  - Supersedes the 150 cm cap in task 8.5/14 (entries above)
+- Lifts removed from B: Spearman ρ = 0.91 with piste km across the 25 resorts → both measure the size of the ski area, keeping both counts size twice; piste km stays as the size measure, lifts only shown in the resort details tab (17.6)
+- Vertical drop and top altitude kept separate (ρ = 0.73, but different meaning: long descents vs. high-altitude area); snow depth uncorrelated with all attributes (|ρ| ≤ 0.25)
+- Default importance: 3 for every core attribute (piste km, vertical drop, top altitude, snowmaking, difficulty mix, snow depth, new snow) → all count the same, no made-up ranking; 0 for family, freeride and park ratings (separate sliders, only relevant for some users, who turn them on)
+- Default total CHF 250 (= how much more a day at the ideal resort is worth than at the most basic one; the user can change it on page 3); tested 135 / 250 / 300 on 15 Jan and 13 Feb with the neutral default importance:
+  - CHF 135 (= sum of the old weights): only close resorts in the top 5, 7 of 25 resorts with CS > 0 → travel alone decides
+  - CHF 250: big resorts can win (Engelberg 2nd, almost tied with Flumserberg; Arosa Lenzerheide in the top 5 in Feb; Zermatt out of the bottom 3 in Jan), 12 of 25 with CS > 0 → about half "worth the trip", the label still separates
+  - CHF 300: 20–21 of 25 with CS > 0 → "worth the trip" almost meaningless
+  - Plausibility: Zermatt's day pass alone costs ~CHF 60 more than Hoch-Ybrig's and skiers pay it → CHF 135 for "best vs. worst on every attribute" was too low for a keen skier
+  - Valais (Saas-Fee, Grimentz-Zinal) stays last in every case → realistic for a day trip from Zurich (4–5 h travel)
+  - Limitation: the number of resorts with CS > 0 reacts strongly to the level of B (12 → 21 between CHF 250 and 300); B₀ moves that level as much as the total but does not change the order → the ranking is the main result, CS > 0 only a rough guide
+- Implemented in `src/finder.py`: `DEFAULT_IMPORTANCE`, `DEFAULT_TOTAL = 250`, `weights_from_importance()`; `DEFAULT_WEIGHTS` derived from them; `tests/test_finder.py` updated (toy resorts: B = 150 + 250 · x̃ = 400 / 275 / 150) → all tests pass
