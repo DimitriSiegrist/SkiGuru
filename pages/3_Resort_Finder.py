@@ -15,13 +15,24 @@ st.title("Resort Finder")
 st.caption("Which ski resort is worth the trip from Zürich HB on your day?")
 
 
-@st.cache_data(show_spinner=False)
+# cached for 6 h: the GitHub Actions update prices (weekly) and snow (twice a week) in data_clean/,
+# so the online app picks up the new files without a reboot
+@st.cache_data(ttl="6h", show_spinner="Loading resort data …")
 def get_data():
     return merge_tables(load_data())
 
 
-data = get_data()
-RESORT = "Engelberg-Titlis"
+@st.cache_data(ttl="6h", show_spinner=False)
+def get_stations():
+    return pd.read_csv(ROOT / "data_clean" / "resort_stations.csv").set_index("resort_id")
+
+
+try:
+    data, stations = get_data(), get_stations()
+except FileNotFoundError as e:   # a file in data_clean/ is missing (a script in scripts/ was not run)
+    st.error(f"A data file is missing, so the ranking cannot be shown: {e}")
+    st.stop()
+
 dates = sorted(data.dropna(subset=["price"])["date"].unique())
 first, last = dt.date.fromisoformat(dates[0]), dt.date.fromisoformat(dates[-1])
 
@@ -127,6 +138,18 @@ else:
     st.warning(f"Not worth it: the trip costs you CHF {-sel['CS']:.0f} more than it is worth to you.")
 
 
+# where the day-pass price comes from (task 17.5): fixed tariff or scraped shop price, and how old it is
+pinfo = data.loc[(data["resort_id"] == sel["resort_id"]) & (data["date"] == day.isoformat())].iloc[0]
+checked = dt.date.fromisoformat(pinfo["scraped_on"])
+if pinfo["price_source"] == "tariff":
+    st.caption("Day pass: fixed price from the resort's price list (no date-specific online price).")
+else:
+    st.caption(f"Day pass: online shop price for this date, scraped on {checked.day} {checked:%B %Y}.")
+age = (dt.date.today() - checked).days
+if age > 14:   # the price Action runs weekly → older than two runs means it failed
+    st.warning(f"This price was last checked {age} days ago and may have changed.")
+
+
 # waterfall B − P − K − v·T = CS (task 17.3): each cost bar steps down from where the previous one ended
 steps = pd.DataFrame({
     "part": ["Benefit B", "Day pass P", "Travel cost K", "Time cost v·T", "Surplus CS"],
@@ -155,7 +178,7 @@ st.altair_chart((bars + labels + zero).properties(height=220))
 
 
 # snow outlook for the selected resort (task 17.4): expected snow depth over the season at its station
-stn = pd.read_csv(ROOT / "data_clean" / "resort_stations.csv").set_index("resort_id").loc[sel["resort_id"]]
+stn = stations.loc[sel["resort_id"]]
 season = data.loc[data["resort_id"] == sel["resort_id"], ["date", "HS_exp"]].copy()
 season["date"] = pd.to_datetime(season["date"])
 ski_day = season[season["date"] == pd.Timestamp(day)]
