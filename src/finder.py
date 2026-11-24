@@ -7,14 +7,29 @@ ROOT = Path(__file__).resolve().parents[1]
 
 # fixed reference ranges = real min/max of the 25 resorts, rounded outward (task 10.3)
 # set once, not min-max across the list → B does not change when a resort is added
-RANGES = {"piste_km": (25, 425), "lifts": (5, 70), "vertical_drop": (600, 2400),
+# lifts removed from B in task 16.4 (ρ = 0.91 with piste km → size counted twice)
+RANGES = {"piste_km": (25, 425), "vertical_drop": (600, 2400),
           "top_alt": (1800, 3900), "snowmaking_share": (0, 1),
           "rating_family": (1, 5), "rating_freeride": (1, 5), "rating_park": (1, 5)}  # Skiresort stars
 
+# default importance 0 (not important) … 5 (very important); the user changes it with sliders on page 3 (task 16.4)
+# core attributes 3 = all count the same; family / freeride / park 0 = only for users who care
+DEFAULT_IMPORTANCE = {"piste_km": 3, "vertical_drop": 3, "top_alt": 3, "snowmaking_share": 3,
+                      "difficulty": 3, "x_snow_depth": 3, "x_new_snow": 3,
+                      "rating_family": 0, "rating_freeride": 0, "rating_park": 0}
+# default total: CHF a day at the ideal resort is worth more than at the most basic one (task 16.4)
+DEFAULT_TOTAL = 250
+
+
+def weights_from_importance(importance, total=DEFAULT_TOTAL):
+    """CHF weight per attribute: w_k = total × importance_k / Σ importance.
+    All importances 0 → all weights 0 (B = B0)."""
+    s = sum(importance.values())
+    return {k: (total * v / s if s > 0 else 0.0) for k, v in importance.items()}
+
+
 # default weights: CHF for the best vs. the worst value of each attribute
-DEFAULT_WEIGHTS = {"piste_km": 30, "lifts": 5, "vertical_drop": 15, "top_alt": 10,
-                   "snowmaking_share": 5, "difficulty": 10, "x_snow_depth": 25, "x_new_snow": 10,
-                   "rating_family": 5, "rating_freeride": 5, "rating_park": 5}
+DEFAULT_WEIGHTS = weights_from_importance(DEFAULT_IMPORTANCE)
 
 # difficulty mix: which piste colour counts for the user's level (task 9)
 LEVEL_KM = {"beginner": "km_blue", "intermediate": "km_red", "expert": "km_black"}
