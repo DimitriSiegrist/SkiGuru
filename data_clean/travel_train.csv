@@ -1,26 +1,26 @@
-resort,start,t_out_min,t_back_min,last_mile_min,t_round_min,fare_full_return,fare_halbtax_return,queried_on
-Engelberg-Titlis,Zürich HB,103,109,10,232,80.0,40.0,2026-11-20
-Flims Laax Falera,Zürich HB,123,125,2,252,118.4,59.2,2026-11-20
-Toggenburg (Chäserrugg),Zürich HB,107,113,5,230,77.6,38.8,2026-11-20
-Verbier/4 Vallées,Zürich HB,219,215,3,440,241.6,120.8,2026-11-20
-Zermatt/Matterhorn Ski Paradise,Zürich HB,195,201,10,416,260.0,130.0,2026-11-20
-Grimentz-Zinal,Zürich HB,215,217,2,436,236.4,118.2,2026-11-20
-Adelboden-Lenk,Zürich HB,144,149,2,297,164.0,82.0,2026-11-20
-Crans-Montana,Zürich HB,175,164,5,349,229.2,114.6,2026-11-20
-Aletsch Arena,Zürich HB,170,179,5,359,206.0,103.0,2026-11-20
-Belalp,Zürich HB,160,163,2,327,196.8,98.4,2026-11-20
-Leukerbad,Zürich HB,184,172,10,376,217.2,108.6,2026-11-20
-Savognin,Zürich HB,146,148,5,304,133.2,66.6,2026-11-20
-Flumserberg,Zürich HB,58,59,2,121,58.0,29.0,2026-11-20
-Hoch-Ybrig,Zürich HB,84,88,5,182,60.8,30.4,2026-11-20
-Stoos,Zürich HB,102,105,5,217,86.4,43.2,2026-11-20
-Saas-Fee,Zürich HB,182,188,10,390,220.8,110.4,2026-11-20
-Arosa Lenzerheide,Zürich HB,114,117,2,235,106.0,53.0,2026-11-20
-Andermatt-Sedrun,Zürich HB,121,125,5,256,97.2,48.6,2026-11-20
-Davos Klosters – Parsenn,Zürich HB,135,136,3,277,118.0,59.0,2026-11-20
-Davos Klosters – Jakobshorn,Zürich HB,140,141,5,291,118.0,59.0,2026-11-20
-Davos Klosters – Rinerhorn,Zürich HB,152,153,5,315,122.0,61.0,2026-11-20
-Davos Klosters – Madrisa,Zürich HB,106,109,3,221,112.0,56.0,2026-11-20
-Jungfrau – Kleine Scheidegg/Männlichen,Zürich HB,151,157,2,312,168.0,84.0,2026-11-20
-Jungfrau – First,Zürich HB,158,161,10,339,169.6,84.8,2026-11-20
-Jungfrau – Schilthorn/Mürren,Zürich HB,172,180,10,372,185.2,92.6,2026-11-20
+resort_id,resort,start,t_out_min,t_back_min,last_mile_min,t_round_min,fare_full_return,fare_halbtax_return,queried_on
+engelberg_titlis,Engelberg-Titlis,Zürich HB,103,109,10,232,80.0,40.0,2026-11-20
+flims_laax_falera,Flims Laax Falera,Zürich HB,123,125,2,252,118.4,59.2,2026-11-20
+toggenburg_chaeserrugg,Toggenburg (Chäserrugg),Zürich HB,107,113,5,230,77.6,38.8,2026-11-20
+verbier_4_vallees,Verbier/4 Vallées,Zürich HB,219,215,3,440,241.6,120.8,2026-11-20
+zermatt_matterhorn_ski_paradise,Zermatt/Matterhorn Ski Paradise,Zürich HB,195,201,10,416,260.0,130.0,2026-11-20
+grimentz_zinal,Grimentz-Zinal,Zürich HB,215,217,2,436,236.4,118.2,2026-11-20
+adelboden_lenk,Adelboden-Lenk,Zürich HB,144,149,2,297,164.0,82.0,2026-11-20
+crans_montana,Crans-Montana,Zürich HB,175,164,5,349,229.2,114.6,2026-11-20
+aletsch_arena,Aletsch Arena,Zürich HB,170,179,5,359,206.0,103.0,2026-11-20
+belalp,Belalp,Zürich HB,160,163,2,327,196.8,98.4,2026-11-20
+leukerbad,Leukerbad,Zürich HB,184,172,10,376,217.2,108.6,2026-11-20
+savognin,Savognin,Zürich HB,146,148,5,304,133.2,66.6,2026-11-20
+flumserberg,Flumserberg,Zürich HB,58,59,2,121,58.0,29.0,2026-11-20
+hoch_ybrig,Hoch-Ybrig,Zürich HB,84,88,5,182,60.8,30.4,2026-11-20
+stoos,Stoos,Zürich HB,102,105,5,217,86.4,43.2,2026-11-20
+saas_fee,Saas-Fee,Zürich HB,182,188,10,390,220.8,110.4,2026-11-20
+arosa_lenzerheide,Arosa Lenzerheide,Zürich HB,114,117,2,235,106.0,53.0,2026-11-20
+andermatt_sedrun,Andermatt-Sedrun,Zürich HB,121,125,5,256,97.2,48.6,2026-11-20
+davos_klosters_parsenn,Davos Klosters – Parsenn,Zürich HB,135,136,3,277,118.0,59.0,2026-11-20
+davos_klosters_jakobshorn,Davos Klosters – Jakobshorn,Zürich HB,140,141,5,291,118.0,59.0,2026-11-20
+davos_klosters_rinerhorn,Davos Klosters – Rinerhorn,Zürich HB,152,153,5,315,122.0,61.0,2026-11-20
+davos_klosters_madrisa,Davos Klosters – Madrisa,Zürich HB,106,109,3,221,112.0,56.0,2026-11-20
+jungfrau_kleine_scheidegg_maennlichen,Jungfrau – Kleine Scheidegg/Männlichen,Zürich HB,151,157,2,312,168.0,84.0,2026-11-20
+jungfrau_first,Jungfrau – First,Zürich HB,158,161,10,339,169.6,84.8,2026-11-20
+jungfrau_schilthorn_muerren,Jungfrau – Schilthorn/Mürren,Zürich HB,172,180,10,372,185.2,92.6,2026-11-20

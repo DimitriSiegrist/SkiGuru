@@ -140,3 +140,32 @@
 - Expected snow depth on 15 Jan: 62–189 cm; most at the northern Alpine rim and in western Valais (Stoos, Crans-Montana, Leukerbad), less in inner Valais (Saas-Fee 82 cm) → precipitation matters more than altitude
 - Cap 150 cm: Stoos, Crans-Montana and Leukerbad all at x_snow_depth = 1 on 15 Jan → snow depth does not separate the snowiest resorts; revisit in task 16
 - Merge key `resort_id` added to both snow tables (`resort` kept as readable name); `src/finder.py` switches to `resort_id` in task 15.1
+
+## Merging the finder tables (task 15.1, 23 Nov 2026)
+- `merge_tables()` in `src/finder.py` joins all inputs into one table with one row per resort and date (25 resorts × 151 days, 1 Dec–30 Apr = 3,775 rows); merge key `resort_id` everywhere (`resort_id` added to `data_clean/travel_train.csv`, the last table that only had the name)
+- Prices: the weekly scraper appends, so a resort can have 2–4 prices for the same day → the latest scrape (`scraped_on`) is used
+  - Reason: dynamic prices change as the date gets closer; the newest price is closest to what the user will pay
+- Snow table as the base (all 151 days for every resort); days without a price (outside the resort's season) are kept with `price = NaN` (666 resort-days) instead of being dropped
+  - Reason: the app can say "no price for this date" instead of the resort silently disappearing from the ranking (task 17.5)
+- `validate=` on every merge → pandas raises an error if a key is unexpectedly duplicated, so a duplicate price or resort cannot silently multiply rows
+
+## Consumer surplus for all resorts (task 15.2, 23 Nov 2026)
+- `merge_tables()` also keeps `extra_chf_return` (shuttle fare, already included in `k_car`), so the travel-pass discount on the shuttle can be applied in `finder.py`
+- Difficulty mix: x̃_difficulty = share of piste km at the user's level (beginner → `km_blue`, intermediate → `km_red`, expert → `km_black`, divided by `piste_km`), scaled with a fixed range per colour = real min/max of the 25 resorts rounded outward to 0.05: blue 0.05–0.65 (real 0.07–0.62), red 0.20–0.80 (real 0.22–0.80), black 0.00–0.40 (real 0.04–0.36) → `LEVEL_RANGES` in `src/finder.py`
+  - Reason: the raw shares differ a lot by colour (median blue 0.30, red 0.52, black 0.14); used directly as x̃, the best resort would get at most CHF 3.60 of the CHF 10 weight for an expert but CHF 8 for an intermediate → with a range per colour, the weight means "best vs. worst resort for your level" for every level
+  - Same rule as the other attributes (task 10.3): fixed, not min-max across the list, so B does not change when a resort is added
+  - Limitation: the share ignores the absolute km (a small resort with a high black share scores fully for experts); size is covered by `piste_km`
+- Car train (Lötschberg, Furka): `travel_cost()` adds `car_train_chf_fri_sun` on Fri–Sun and on public holidays Mon–Thu, otherwise `car_train_chf_mon_thu`; the only Mon–Thu holiday in the season is Easter Monday (29 Mar 2027, `HOLIDAYS`); 25 Dec 2026 and 1 Jan 2027 are Fridays anyway
+- Travel pass in car mode: `PASS_DISCOUNT` (GA 100 %, Halbtax 50 %) is subtracted from `extra_chf_return` (Zermatt shuttle Täsch–Zermatt), which is already in `k_car`; the car train stays at full price → the travel-pass input on page 3 is now active in car mode too
+- Train mode unchanged: stored sbb.ch fares (`fare_full_return`, `fare_halbtax_return`, GA = 0), not `PASS_DISCOUNT`, to keep the sbb.ch rounding
+- Default weight for the difficulty mix: CHF 10 (decided in task 9), added to `DEFAULT_WEIGHTS`
+
+## Budget filter and ranking (task 15.3, 23 Nov 2026)
+- `rank_resorts()` in `src/finder.py`: budget filter on the money spent, P + K ≤ budget; the time cost v·T is not counted
+  - Reason: the budget is what the user can pay out of pocket; v·T is an opportunity cost, not a payment (it still enters the CS)
+- Resorts without a price on the chosen date (outside their season) are dropped from the ranking; page 3 can list them separately with `cs[cs["P"].isna()]` (task 17.5)
+- Resorts with negative CS stay in the ranking (sorted last); whether they are shown as "not worth the trip" is decided in 17.2
+
+## Test of the CS module (task 15.4, 23 Nov 2026)
+- `tests/test_finder.py`: 3 made-up resorts with values at the top, middle and bottom of every fixed reference range, so x̃ = 1, 0.5, 0 and B, K, v·T and CS can be calculated by hand; covers train and car (car train by weekday, Easter Monday, shuttle discount by travel pass), the budget filter and a missing price → all pass
+- Made-up data instead of real resorts: real values give x̃ with many decimals, so a hand calculation would only check the code against itself; the toy values make every expected number exact

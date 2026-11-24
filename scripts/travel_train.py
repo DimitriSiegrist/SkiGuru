@@ -63,12 +63,16 @@ def main():
         })
         print(f"ok {f['resort']}: {t_out} + {t_back} min")
     out = pd.DataFrame(rows)
+    ids = pd.read_csv(ROOT / "data_clean" / "resorts.csv")[["resort_id", "resort"]]
+    out = ids.merge(out, on="resort", how="right", validate="1:1")  # resort_id as first column
+    no_id = out.loc[out["resort_id"].isna(), "resort"].tolist()
+    if no_id:
+        print(f"No resort_id (name not in resorts.csv): {no_id}")
     out.to_csv(OUT, index=False)
     print(out)
     print(f"Saved {len(out)} rows to {OUT}")
     if failed:
         print(f"{len(failed)} failed: {failed}")
-    print(f"Saved {len(out)} rows to {OUT}")
 
 
 if __name__ == "__main__":
