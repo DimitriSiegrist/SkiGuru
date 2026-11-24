@@ -1,9 +1,12 @@
 import datetime as dt
 
+import altair as alt
+import pandas as pd
 import streamlit as st
 
-from src.finder import (DEFAULT_IMPORTANCE, DEFAULT_TOTAL, consumer_surplus, load_data,
-                        merge_tables, rank_resorts, weights_from_importance)
+from src.finder import (DEFAULT_IMPORTANCE, DEFAULT_TOTAL, LEVEL_KM, benefit, consumer_surplus,
+                        load_data, merge_tables, rank_resorts, scaled_attributes,
+                        weights_from_importance)
 from src.style import setup_page
 
 setup_page("Resort Finder")
@@ -69,10 +72,12 @@ snow_day = data.loc[data["date"] == day.isoformat(), ["resort_id", "HS_exp", "HN
 table = ranking.merge(snow_day, on="resort_id", how="left")
 table["worth"] = table["CS"] >= 0   # CS ≥ 0 → worth the trip compared with staying home
 
-st.caption(f"{table['worth'].sum()} of {len(table)} resorts are worth the trip (CS ≥ 0).")
-st.dataframe(
+st.caption(f"{table['worth'].sum()} of {len(table)} resorts are worth the trip (CS ≥ 0). "
+           "Click a row for details.")
+event = st.dataframe(
     table[["rank", "resort", "CS", "worth", "B", "P", "K", "T_h", "vT", "HS_exp", "HN3_exp"]],
     hide_index=True,
+    on_select="rerun", selection_mode="single-row",
     column_config={
         "rank": st.column_config.NumberColumn("#", width="small"),
         "resort": "Resort",
@@ -97,13 +102,93 @@ over_budget = cs["P"].notna().sum() - len(ranking)
 if over_budget > 0:
     st.caption(f"{over_budget} more open resort(s) above your budget of CHF {budget}.")
 
-# share the top resort's snow station with the snow pages (same key as pages 1 and 2);
-# only when the top resort changes, so a station picked on a snow page is not overwritten
-# (task 17.6: switch to the resort picked in "Resort details")
-top = ranking.iloc[0]
-if st.session_state.get("finder_resort") != top["resort"]:
-    st.session_state.finder_resort = top["resort"]
-    st.session_state.station = data.loc[data["resort_id"] == top["resort_id"], "station_code"].iloc[0]
+# --- selected resort (task 17.3): clicked row, otherwise the top-ranked resort ---
+rows = event.selection.rows
+sel = table.iloc[rows[0]] if rows else table.iloc[0]
+
+# share the selected resort's snow station with the snow pages (same key as pages 1 and 2);
+# only when the selected resort changes, so a station picked on a snow page is not overwritten
+if st.session_state.get("finder_resort") != sel["resort"]:
+    st.session_state.finder_resort = sel["resort"]
+    st.session_state.station = data.loc[data["resort_id"] == sel["resort_id"], "station_code"].iloc[0]
+
+st.subheader(f"{sel['rank']}. {sel['resort']}")
+m1, m2, m3, m4, m5 = st.columns(5)
+m1.metric("Benefit B", f"CHF {sel['B']:.0f}")
+m2.metric("Day pass P", f"CHF {sel['P']:.2f}")
+m3.metric("Travel cost K", f"CHF {sel['K']:.2f}")
+m4.metric("Travel time", f"{sel['T_h']:.1f} h", f"CHF {sel['vT']:.0f} time cost", delta_color="off")
+m5.metric("Consumer surplus", f"CHF {sel['CS']:.0f}")
+
+if sel["worth"]:
+    st.success(f"Worth the trip: you gain CHF {sel['CS']:.0f} compared with staying home.")
+else:
+    st.warning(f"Not worth it: the trip costs you CHF {-sel['CS']:.0f} more than it is worth to you.")
+
+
+# waterfall B − P − K − v·T = CS (task 17.3): each cost bar steps down from where the previous one ended
+steps = pd.DataFrame({
+    "part": ["Benefit B", "Day pass P", "Travel cost K", "Time cost v·T", "Surplus CS"],
+    "value": [sel["B"], -sel["P"], -sel["K"], -sel["vT"], sel["CS"]],
+    "kind": ["benefit", "cost", "cost", "cost", "surplus"],
+})
+steps["end"] = steps["value"].cumsum()
+steps.loc[4, "end"] = sel["CS"]                 # CS bar starts at 0, not at the running total
+steps["start"] = steps["end"] - steps["value"]
+steps["label_x"] = steps[["start", "end"]].max(axis=1)
+
+bars = alt.Chart(steps).mark_bar(cornerRadius=4, size=22).encode(
+    y=alt.Y("part:N", sort=None, title=None),
+    x=alt.X("start:Q", title="CHF"),
+    x2="end:Q",
+    color=alt.Color("kind:N", legend=None,
+                    scale=alt.Scale(domain=["benefit", "cost", "surplus"],
+                                    range=["#4a4a4a", "#b5b5b5", "#111111"])),
+    tooltip=[alt.Tooltip("part:N", title="Part"), alt.Tooltip("value:Q", title="CHF", format="+.0f")],
+)
+labels = alt.Chart(steps).mark_text(align="left", dx=6, color="#333333").encode(
+    y=alt.Y("part:N", sort=None), x="label_x:Q", text=alt.Text("value:Q", format="+.0f"),
+)
+zero = alt.Chart(pd.DataFrame({"x": [0]})).mark_rule(color="#999999").encode(x="x:Q")
+st.altair_chart((bars + labels + zero).properties(height=220))
+
+
+# breakdown per attribute (task 17.3): raw value → x̃ → w → w·x̃, same functions as the ranking
+row = data[(data["resort_id"] == sel["resort_id"]) & (data["date"] == day.isoformat())]
+x = scaled_attributes(row, level)
+_, contrib = benefit(x, weights, B0)
+r = row.iloc[0]
+colour = {"beginner": "blue", "intermediate": "red", "expert": "black"}[level]
+
+
+def stars(v):
+    return "no test report (neutral)" if pd.isna(v) else f"{int(v)} of 5 stars"
+
+
+raw = {"piste_km": f"{r['piste_km']:.0f} km", "vertical_drop": f"{r['vertical_drop']:.0f} m",
+       "top_alt": f"{r['top_alt']:.0f} m", "snowmaking_share": f"{r['snowmaking_share']:.0%} of pistes",
+       "difficulty": f"{r[LEVEL_KM[level]] / r['piste_km']:.0%} {colour} km",
+       "x_snow_depth": f"{r['HS_exp']:.0f} cm", "x_new_snow": f"{r['HN3_exp']:.0f} cm in 3 days",
+       "rating_family": stars(r["rating_family"]), "rating_freeride": stars(r["rating_freeride"]),
+       "rating_park": stars(r["rating_park"])}
+calc = pd.DataFrame({
+    "Attribute": [LABELS[k] for k in LABELS],
+    "Value": [raw[k] for k in LABELS],
+    "x̃": [x[k].iloc[0] for k in LABELS],
+    "w": [weights[k] for k in LABELS],
+    "w·x̃": [contrib[k].iloc[0] for k in LABELS],
+})
+
+with st.expander("How is the CS calculated?"):
+    st.dataframe(calc, hide_index=True, column_config={
+        "x̃": st.column_config.NumberColumn("Scaled x̃ (0–1)", format="%.2f"),
+        "w": st.column_config.NumberColumn("Weight w", format="CHF %.2f"),
+        "w·x̃": st.column_config.NumberColumn("Contribution w·x̃", format="CHF %.2f"),
+    })
+    st.markdown(f"Sum of contributions CHF {contrib.iloc[0].sum():.2f} + B₀ CHF {B0} "
+                f"= **B = CHF {sel['B']:.2f}**")
+    st.markdown(f"B − P − K − v·T = {sel['B']:.2f} − {sel['P']:.2f} − {sel['K']:.2f} − {sel['vT']:.2f} "
+                f"= **CS = CHF {sel['CS']:.2f}**")
 
 scraped = data["scraped_on"].dropna().max()
 st.caption(f"CS = B − P − K − v·T. Price: Pricenow, scraped on {scraped}. "
